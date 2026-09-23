@@ -96,17 +96,21 @@ Rectangle {
                                     return 0;
                                 }
                                 visible: sectionCount > 0
-                                width: countText.implicitWidth + 8
-                                height: 16
-                                radius: 8
-                                color: Theme.color.muted
+                                width: Math.max(18, countText.implicitWidth + 10)
+                                height: 18
+                                radius: 9
+                                color: Theme.color.surfaceElevated
+                                border.color: Theme.color.border
+                                border.width: 1
 
                                 Text {
                                     id: countText
                                     anchors.centerIn: parent
                                     text: parent.sectionCount
-                                    font.pixelSize: 9
-                                    color: Theme.color.dimText
+                                    font.family: Theme.font.family
+                                    font.pixelSize: 10
+                                    font.bold: true
+                                    color: Theme.color.foreground
                                 }
                             }
                         }
@@ -178,17 +182,21 @@ Rectangle {
                                     return 0;
                                 }
                                 visible: sectionCount > 0
-                                width: mediaCountText.implicitWidth + 8
-                                height: 16
-                                radius: 8
-                                color: Theme.color.muted
+                                width: Math.max(18, mediaCountText.implicitWidth + 10)
+                                height: 18
+                                radius: 9
+                                color: Theme.color.surfaceElevated
+                                border.color: Theme.color.border
+                                border.width: 1
 
                                 Text {
                                     id: mediaCountText
                                     anchors.centerIn: parent
                                     text: parent.sectionCount
-                                    font.pixelSize: 9
-                                    color: Theme.color.dimText
+                                    font.family: Theme.font.family
+                                    font.pixelSize: 10
+                                    font.bold: true
+                                    color: Theme.color.foreground
                                 }
                             }
                         }
@@ -336,17 +344,21 @@ Rectangle {
                             // Count Badge (when not editing and not hovering)
                             Rectangle {
                                 visible: !userAlbumRow.isEditing && !userAlbumHover.hovered && modelData.photo_ids && modelData.photo_ids.length > 0
-                                width: albumCountText.implicitWidth + 8
-                                height: 16
-                                radius: 8
-                                color: Theme.color.muted
+                                width: Math.max(18, albumCountText.implicitWidth + 10)
+                                height: 18
+                                radius: 9
+                                color: Theme.color.surfaceElevated
+                                border.color: Theme.color.border
+                                border.width: 1
 
                                 Text {
                                     id: albumCountText
                                     anchors.centerIn: parent
                                     text: modelData.photo_ids ? modelData.photo_ids.length : 0
-                                    font.pixelSize: 9
-                                    color: Theme.color.dimText
+                                    font.family: Theme.font.family
+                                    font.pixelSize: 10
+                                    font.bold: true
+                                    color: Theme.color.foreground
                                 }
                             }
 

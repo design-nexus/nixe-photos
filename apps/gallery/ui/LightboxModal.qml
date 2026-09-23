@@ -137,7 +137,8 @@ Rectangle {
                         text: (ViewState.selectedIndex + 1) + " of " + ViewState.displayedPhotos.length
                         font.family: Theme.font.family
                         font.pixelSize: Theme.font.caption
-                        color: Theme.color.dimText
+                        font.bold: true
+                        color: Theme.color.foreground
                     }
                 }
 
