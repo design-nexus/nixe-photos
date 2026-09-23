@@ -22,7 +22,9 @@ Rectangle {
 
         // Left: Item counts & storage info
         Text {
-            text: ViewState.totalItems + " Photos • " + ViewState.totalBytesFormatted + " • " + ViewState.libraryPath
+            text: ViewState.totalItems + " Photos • " +
+                  (ViewState.selectedCount > 0 ? (ViewState.selectedCount + " Selected • ") : "") +
+                  ViewState.totalBytesFormatted + " • " + ViewState.libraryPath
             font.family: Theme.font.family
             font.pixelSize: Theme.font.caption
             color: Theme.color.dimText
@@ -32,7 +34,7 @@ Rectangle {
 
         // Center: Keyboard hints
         Text {
-            text: "Space: Preview   •   I: Info Drawer   •   Ctrl+K: Search   •   Ctrl+O: Open in Strata"
+            text: "←/→/↑/↓: Move   •   Ctrl+A: Select All   •   F: Favorite   •   I: Info   •   Ctrl+O: Open in Strata"
             font.family: Theme.font.family
             font.pixelSize: Theme.font.caption
             color: Theme.color.dimText

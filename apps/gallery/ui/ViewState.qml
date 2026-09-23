@@ -8,8 +8,8 @@ Singleton {
 
     property string currentSection: "all_photos"
     property string currentSectionTitle: "All Photos"
-    property string viewMode: "all" // "years", "months", "days", "all"
-    property real zoomLevel: 0.4    // 0.0 (compact) to 1.0 (large)
+    property string viewMode: "days" // "years", "months", "days", "all"
+    property real zoomLevel: 0.4     // 0.0 (compact) to 1.0 (large)
     property bool inspectorOpen: true
     property bool sidebarOpen: true
     property string searchQuery: ""
@@ -18,6 +18,11 @@ Singleton {
     // Real photos array
     property var allPhotos: []
     property var displayedPhotos: []
+    property var timelineGroups: []
+
+    // Multi-selection state
+    property var selectedIds: []
+    readonly property int selectedCount: selectedIds.length
 
     // Counts
     property int totalItems: 0
@@ -31,13 +36,15 @@ Singleton {
     property var selectedItem: null
     property int selectedIndex: -1
 
+    onViewModeChanged: buildTimelineGroups()
+
     function updatePhotos(photos, total, bytesFormatted, path) {
         root.allPhotos = photos || [];
         root.totalItems = total !== undefined ? total : root.allPhotos.length;
         if (bytesFormatted) root.totalBytesFormatted = bytesFormatted;
         if (path) root.libraryPath = path;
 
-        // Recalculate counts
+        // Recalculate category counts
         var favs = 0;
         var screens = 0;
         var regPhotos = 0;
@@ -53,8 +60,8 @@ Singleton {
 
         filterSection();
 
-        if (!root.selectedItem && root.displayedPhotos.length > 0) {
-            root.selectPhoto(root.displayedPhotos[0], 0);
+        if (root.displayedPhotos.length > 0 && (!root.selectedItem || root.selectedIds.length === 0)) {
+            root.selectSingle(root.displayedPhotos[0], 0);
         }
     }
 
@@ -79,8 +86,9 @@ Singleton {
             }
         }
         root.displayedPhotos = res;
+        buildTimelineGroups();
 
-        // If selection is not in displayed, reset or select first
+        // Restore or reset selection
         if (root.displayedPhotos.length > 0) {
             var found = false;
             if (root.selectedItem) {
@@ -93,17 +101,169 @@ Singleton {
                 }
             }
             if (!found) {
-                root.selectPhoto(root.displayedPhotos[0], 0);
+                root.selectSingle(root.displayedPhotos[0], 0);
             }
         } else {
+            root.selectedItem = null;
+            root.selectedIndex = -1;
+            root.selectedIds = [];
+        }
+    }
+
+    function buildTimelineGroups() {
+        if (!root.displayedPhotos || root.displayedPhotos.length === 0) {
+            root.timelineGroups = [];
+            return;
+        }
+
+        if (root.viewMode === "all") {
+            root.timelineGroups = [{
+                id: "all",
+                header: root.currentSectionTitle,
+                subheader: root.displayedPhotos.length + " Photos",
+                items: root.displayedPhotos
+            }];
+            return;
+        }
+
+        var groupsMap = {};
+        var groupOrder = [];
+
+        for (var i = 0; i < root.displayedPhotos.length; i++) {
+            var p = root.displayedPhotos[i];
+            var key = "";
+            var title = "";
+
+            if (root.viewMode === "years") {
+                key = String(p.year || "2026");
+                title = key;
+            } else if (root.viewMode === "months") {
+                var mName = fullMonthName(p.month);
+                key = mName + " " + (p.year || "2026");
+                title = key;
+            } else {
+                // "days"
+                key = p.date_display || (p.year + "-" + p.month + "-" + p.day);
+                title = key;
+            }
+
+            if (!groupsMap[key]) {
+                groupsMap[key] = {
+                    id: key,
+                    header: title,
+                    items: []
+                };
+                groupOrder.push(key);
+            }
+            groupsMap[key].items.push(p);
+        }
+
+        var res = [];
+        for (var k = 0; k < groupOrder.length; k++) {
+            var g = groupsMap[groupOrder[k]];
+            g.subheader = g.items.length + (g.items.length === 1 ? " photo" : " photos");
+            res.push(g);
+        }
+        root.timelineGroups = res;
+    }
+
+    function fullMonthName(m) {
+        var names = [
+            "", "January", "February", "March", "April", "May", "June",
+            "July", "August", "September", "October", "November", "December"
+        ];
+        return names[m] || "September";
+    }
+
+    // Selection management
+    function isSelected(id) {
+        return root.selectedIds.indexOf(id) !== -1;
+    }
+
+    function selectSingle(photo, index) {
+        root.selectedItem = photo;
+        root.selectedIndex = index !== undefined ? index : findIndexById(photo.id);
+        root.selectedIds = [photo.id];
+    }
+
+    function toggleSelect(photo, index) {
+        var idx = root.selectedIds.indexOf(photo.id);
+        var copy = root.selectedIds.slice();
+        if (idx === -1) {
+            copy.push(photo.id);
+            root.selectedItem = photo;
+            root.selectedIndex = index !== undefined ? index : findIndexById(photo.id);
+        } else {
+            copy.splice(idx, 1);
+            if (root.selectedItem && root.selectedItem.id === photo.id) {
+                root.selectedItem = copy.length > 0 ? findPhotoById(copy[copy.length - 1]) : null;
+                root.selectedIndex = root.selectedItem ? findIndexById(root.selectedItem.id) : -1;
+            }
+        }
+        root.selectedIds = copy;
+    }
+
+    function selectRange(targetIndex) {
+        if (targetIndex < 0 || targetIndex >= root.displayedPhotos.length) return;
+        var start = root.selectedIndex >= 0 ? root.selectedIndex : 0;
+        var min = Math.min(start, targetIndex);
+        var max = Math.max(start, targetIndex);
+
+        var copy = root.selectedIds.slice();
+        for (var i = min; i <= max; i++) {
+            var id = root.displayedPhotos[i].id;
+            if (copy.indexOf(id) === -1) {
+                copy.push(id);
+            }
+        }
+        root.selectedIds = copy;
+        root.selectedItem = root.displayedPhotos[targetIndex];
+        root.selectedIndex = targetIndex;
+    }
+
+    function selectAll() {
+        var allIds = [];
+        for (var i = 0; i < root.displayedPhotos.length; i++) {
+            allIds.push(root.displayedPhotos[i].id);
+        }
+        root.selectedIds = allIds;
+    }
+
+    function clearSelection() {
+        if (root.displayedPhotos.length > 0) {
+            root.selectSingle(root.displayedPhotos[0], 0);
+        } else {
+            root.selectedIds = [];
             root.selectedItem = null;
             root.selectedIndex = -1;
         }
     }
 
-    function selectPhoto(photo, index) {
-        root.selectedItem = photo;
-        root.selectedIndex = index !== undefined ? index : -1;
+    function navigateGrid(delta) {
+        if (root.displayedPhotos.length === 0) return;
+        var nextIdx = root.selectedIndex + delta;
+        if (nextIdx < 0) nextIdx = 0;
+        if (nextIdx >= root.displayedPhotos.length) nextIdx = root.displayedPhotos.length - 1;
+        root.selectSingle(root.displayedPhotos[nextIdx], nextIdx);
+    }
+
+    function findIndexById(id) {
+        for (var i = 0; i < root.displayedPhotos.length; i++) {
+            if (root.displayedPhotos[i].id === id) return i;
+        }
+        return -1;
+    }
+
+    function findPhotoById(id) {
+        for (var i = 0; i < root.displayedPhotos.length; i++) {
+            if (root.displayedPhotos[i].id === id) return root.displayedPhotos[i];
+        }
+        return null;
+    }
+
+    function toggleSelectedFavorite() {
+        if (!root.selectedItem) return;
+        Backend.toggleFavorite(root.selectedItem.id);
     }
 
     function toggleInspector() {

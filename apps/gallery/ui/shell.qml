@@ -26,10 +26,32 @@ ShellRoot {
                     ViewState.toggleInspector();
                     event.accepted = true;
                 } else if (event.key === Qt.Key_O && (event.modifiers & Qt.ControlModifier)) {
-                    Backend.revealInStrata(ViewState.libraryPath);
+                    var target = ViewState.selectedItem ? ViewState.selectedItem.path : ViewState.libraryPath;
+                    Backend.revealInStrata(target);
                     event.accepted = true;
                 } else if (event.key === Qt.Key_K && (event.modifiers & Qt.ControlModifier)) {
                     ViewState.searchActive = !ViewState.searchActive;
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_A && (event.modifiers & Qt.ControlModifier)) {
+                    ViewState.selectAll();
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_Escape) {
+                    ViewState.clearSelection();
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_Period || (event.key === Qt.Key_F && !(event.modifiers & Qt.ControlModifier))) {
+                    ViewState.toggleSelectedFavorite();
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_Left) {
+                    ViewState.navigateGrid(-1);
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_Right) {
+                    ViewState.navigateGrid(1);
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_Up) {
+                    ViewState.navigateGrid(-4);
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_Down) {
+                    ViewState.navigateGrid(4);
                     event.accepted = true;
                 }
             }
