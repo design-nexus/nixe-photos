@@ -142,56 +142,6 @@ Rectangle {
                 }
             }
 
-            // macOS Photos Exposure Histogram Representation
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 6
-                visible: ViewState.selectedItem !== null
-
-                Text {
-                    text: "HISTOGRAM"
-                    font.family: Theme.font.family
-                    font.pixelSize: Theme.font.caption
-                    font.bold: true
-                    color: Theme.color.dimText
-                }
-
-                Rectangle {
-                    Layout.fillWidth: true
-                    height: 52
-                    radius: Theme.geometry.radiusMedium
-                    color: Theme.color.background
-                    border.color: Theme.color.border
-                    border.width: 1
-
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.margins: 6
-                        spacing: 2
-
-                        Repeater {
-                            model: 24
-
-                            Rectangle {
-                                Layout.fillHeight: true
-                                Layout.fillWidth: true
-                                radius: 1
-
-                                property real barHeight: {
-                                    // Generate realistic histogram distribution based on index
-                                    var x = index / 23.0;
-                                    var curve = Math.sin(x * Math.PI) * 0.7 + Math.sin(x * 3 * Math.PI) * 0.2 + 0.15;
-                                    return Math.max(0.1, Math.min(1.0, curve));
-                                }
-
-                                height: parent.height * barHeight
-                                Layout.alignment: Qt.AlignBottom
-                                color: Qt.rgba(Theme.color.accent.r, Theme.color.accent.g, Theme.color.accent.b, 0.3 + (barHeight * 0.5))
-                            }
-                        }
-                    }
-                }
-            }
 
             // File Details Section
             ColumnLayout {
