@@ -242,6 +242,7 @@ Rectangle {
                                                 anchors.fill: parent
                                                 source: "file://" + (photoData.thumbnail_path || photoData.path)
                                                 fillMode: Image.PreserveAspectCrop
+                                                rotation: ViewState.getRotation(photoData.id)
                                                 asynchronous: true
                                                 mipmap: true
                                             }
@@ -360,6 +361,11 @@ Rectangle {
                                                 var gIdx = ViewState.findIndexById(photoData.id);
                                                 ViewState.selectSingle(photoData, gIdx);
                                             }
+                                        }
+                                        onDoubleClicked: function() {
+                                            var gIdx = ViewState.findIndexById(photoData.id);
+                                            ViewState.selectSingle(photoData, gIdx);
+                                            ViewState.openLightbox();
                                         }
                                     }
                                 }

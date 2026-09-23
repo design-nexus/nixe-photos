@@ -6,3 +6,4 @@ Sidebar 1.0 Sidebar.qml
 GalleryArea 1.0 GalleryArea.qml
 InspectorDrawer 1.0 InspectorDrawer.qml
 StatusBar 1.0 StatusBar.qml
+LightboxModal 1.0 LightboxModal.qml

@@ -261,6 +261,65 @@ Singleton {
         return null;
     }
 
+    // Lightbox & Rotation State
+    property bool lightboxOpen: false
+    property var rotationMap: ({})
+    property string toastMessage: ""
+    property bool toastVisible: false
+
+    function showToast(msg) {
+        root.toastMessage = msg;
+        root.toastVisible = true;
+    }
+
+    function hideToast() {
+        root.toastVisible = false;
+    }
+
+    function openLightbox(photo, index) {
+        if (photo) {
+            root.selectSingle(photo, index);
+        }
+        root.lightboxOpen = true;
+    }
+
+    function closeLightbox() {
+        root.lightboxOpen = false;
+    }
+
+    function nextPhoto() {
+        if (root.displayedPhotos.length === 0) return;
+        var next = (root.selectedIndex + 1) % root.displayedPhotos.length;
+        root.selectSingle(root.displayedPhotos[next], next);
+    }
+
+    function prevPhoto() {
+        if (root.displayedPhotos.length === 0) return;
+        var prev = (root.selectedIndex - 1 + root.displayedPhotos.length) % root.displayedPhotos.length;
+        root.selectSingle(root.displayedPhotos[prev], prev);
+    }
+
+    function rotateCurrent() {
+        if (!root.selectedItem) return;
+        var current = getRotation(root.selectedItem.id);
+        var nextAngle = (current + 90) % 360;
+        var mapCopy = Object.assign({}, root.rotationMap);
+        mapCopy[root.selectedItem.id] = nextAngle;
+        root.rotationMap = mapCopy;
+    }
+
+    function getRotation(id) {
+        if (!id) return 0;
+        return root.rotationMap[id] || 0;
+    }
+
+    function copyCurrentPath() {
+        if (!root.selectedItem) return;
+        var p = root.selectedItem.path;
+        Quickshell.execDetached(["wl-copy", p]);
+        showToast("Copied path to clipboard");
+    }
+
     function toggleSelectedFavorite() {
         if (!root.selectedItem) return;
         Backend.toggleFavorite(root.selectedItem.id);
