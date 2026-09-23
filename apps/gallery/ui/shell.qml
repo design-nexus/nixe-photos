@@ -149,7 +149,7 @@ ShellRoot {
                     anchors.centerIn: parent
                     spacing: 6
 
-                    Text { text: "✓"; font.pixelSize: 11; font.bold: true; color: Theme.color.accent }
+                    NexusIcon { name: "check"; size: 12; color: Theme.color.accent }
                     Text {
                         id: toastText
                         text: ViewState.toastMessage

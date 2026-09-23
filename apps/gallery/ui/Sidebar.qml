@@ -52,11 +52,11 @@ Rectangle {
 
                 Repeater {
                     model: [
-                        { id: "all_photos", title: "All Photos", icon: "🖼" },
-                        { id: "timeline", title: "Timeline", icon: "📅" },
-                        { id: "favorites", title: "Favorites", icon: "⭐" },
-                        { id: "recent", title: "Recently Added", icon: "🕒" },
-                        { id: "trash", title: "Trash", icon: "🗑" }
+                        { id: "all_photos", title: "All Photos", icon: "image" },
+                        { id: "timeline", title: "Timeline", icon: "calendar" },
+                        { id: "favorites", title: "Favorites", icon: "star" },
+                        { id: "recent", title: "Recently Added", icon: "clock" },
+                        { id: "trash", title: "Trash", icon: "trash" }
                     ]
 
                     Rectangle {
@@ -73,9 +73,11 @@ Rectangle {
                             anchors.rightMargin: 8
                             spacing: 8
 
-                            Text {
-                                text: modelData.icon
-                                font.pixelSize: 13
+                            NexusIcon {
+                                name: modelData.icon
+                                size: 15
+                                filled: modelData.id === "favorites" && libRow.active
+                                color: libRow.active ? Theme.color.accent : (itemHover.hovered ? Theme.color.foreground : Theme.color.dimText)
                             }
 
                             Text {
@@ -134,9 +136,9 @@ Rectangle {
 
                 Repeater {
                     model: [
-                        { id: "photos", title: "Photos", icon: "📸" },
-                        { id: "screenshots", title: "Screenshots", icon: "🖥" },
-                        { id: "videos", title: "Videos", icon: "🎞" }
+                        { id: "photos", title: "Photos", icon: "camera" },
+                        { id: "screenshots", title: "Screenshots", icon: "monitor" },
+                        { id: "videos", title: "Videos", icon: "film" }
                     ]
 
                     Rectangle {
@@ -153,9 +155,10 @@ Rectangle {
                             anchors.rightMargin: 8
                             spacing: 8
 
-                            Text {
-                                text: modelData.icon
-                                font.pixelSize: 13
+                            NexusIcon {
+                                name: modelData.icon
+                                size: 15
+                                color: mediaRow.active ? Theme.color.accent : (itemHover.hovered ? Theme.color.foreground : Theme.color.dimText)
                             }
 
                             Text {
@@ -223,12 +226,11 @@ Rectangle {
                         radius: 9
                         color: addAlbumHover.hovered ? Theme.color.selection : "transparent"
 
-                        Text {
+                        NexusIcon {
                             anchors.centerIn: parent
-                            text: "+"
-                            font.pixelSize: 13
-                            font.bold: true
-                            color: Theme.color.accent
+                            name: "plus"
+                            size: 11
+                            color: addAlbumHover.hovered ? Theme.color.foreground : Theme.color.dimText
                         }
 
                         HoverHandler { id: addAlbumHover }
@@ -258,9 +260,10 @@ Rectangle {
                             anchors.rightMargin: 8
                             spacing: 8
 
-                            Text {
-                                text: "📁"
-                                font.pixelSize: 13
+                            NexusIcon {
+                                name: "folder"
+                                size: 15
+                                color: userAlbumRow.active ? Theme.color.accent : (userAlbumHover.hovered ? Theme.color.foreground : Theme.color.dimText)
                             }
 
                             Text {

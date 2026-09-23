@@ -33,12 +33,11 @@ Rectangle {
                 radius: Theme.geometry.pillRadius
                 color: sidebarHover.hovered ? Theme.color.selection : "transparent"
 
-                Text {
+                NexusIcon {
                     anchors.centerIn: parent
-                    text: "≡"
-                    font.pixelSize: 16
-                    font.bold: true
-                    color: Theme.color.foreground
+                    name: "menu"
+                    size: 14
+                    color: sidebarHover.hovered ? Theme.color.foreground : Theme.color.dimText
                 }
 
                 HoverHandler { id: sidebarHover }
@@ -132,9 +131,9 @@ Rectangle {
                     anchors.rightMargin: 6
                     spacing: 4
 
-                    Text {
-                        text: "🔍"
-                        font.pixelSize: 10
+                    NexusIcon {
+                        name: "search"
+                        size: 12
                         color: Theme.color.dimText
                     }
 
@@ -170,9 +169,9 @@ Rectangle {
             RowLayout {
                 spacing: 4
 
-                Text {
-                    text: "🖽"
-                    font.pixelSize: 11
+                NexusIcon {
+                    name: "grid"
+                    size: 11
                     color: Theme.color.dimText
                 }
 
@@ -213,9 +212,9 @@ Rectangle {
                     }
                 }
 
-                Text {
-                    text: "🖽"
-                    font.pixelSize: 15
+                NexusIcon {
+                    name: "image"
+                    size: 14
                     color: Theme.color.dimText
                 }
             }
@@ -229,11 +228,10 @@ Rectangle {
                 border.color: ViewState.inspectorOpen ? Theme.color.accent : "transparent"
                 border.width: 1
 
-                Text {
+                NexusIcon {
                     anchors.centerIn: parent
-                    text: "ℹ"
-                    font.pixelSize: 14
-                    font.bold: true
+                    name: "info"
+                    size: 14
                     color: ViewState.inspectorOpen ? Theme.color.accent : Theme.color.foreground
                 }
 

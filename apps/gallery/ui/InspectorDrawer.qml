@@ -184,11 +184,7 @@ Rectangle {
 
                                 height: parent.height * barHeight
                                 Layout.alignment: Qt.AlignBottom
-                                color: {
-                                    if (index < 6) return Qt.rgba(0.9, 0.4, 0.4, 0.75); // Shadows (Red/Warm)
-                                    if (index < 18) return Qt.rgba(0.4, 0.8, 0.5, 0.75); // Midtones (Green)
-                                    return Qt.rgba(0.4, 0.6, 0.95, 0.75); // Highlights (Blue)
-                                }
+                                color: Qt.rgba(Theme.color.accent.r, Theme.color.accent.g, Theme.color.accent.b, 0.3 + (barHeight * 0.5))
                             }
                         }
                     }
@@ -404,8 +400,8 @@ Rectangle {
 
                         RowLayout {
                             anchors.centerIn: parent
-                            spacing: 4
-                            Text { text: "↻"; font.pixelSize: 12 }
+                            spacing: 6
+                            NexusIcon { name: "rotate"; size: 13; color: rotHover.hovered ? Theme.color.foreground : Theme.color.dimText }
                             Text { text: "Rotate (R)"; font.pixelSize: Theme.font.bodySmall; color: Theme.color.foreground }
                         }
 
@@ -423,8 +419,8 @@ Rectangle {
 
                         RowLayout {
                             anchors.centerIn: parent
-                            spacing: 4
-                            Text { text: "📋"; font.pixelSize: 11 }
+                            spacing: 6
+                            NexusIcon { name: "copy"; size: 13; color: copyHover.hovered ? Theme.color.foreground : Theme.color.dimText }
                             Text { text: "Copy Path"; font.pixelSize: Theme.font.bodySmall; color: Theme.color.foreground }
                         }
 
@@ -446,7 +442,7 @@ Rectangle {
                         anchors.centerIn: parent
                         spacing: 6
 
-                        Text { text: "📂"; font.pixelSize: 12 }
+                        NexusIcon { name: "folder"; size: 14; color: revealHover.hovered ? Theme.color.accent : Theme.color.dimText }
                         Text {
                             text: "Reveal in Strata (Ctrl+O)"
                             font.family: Theme.font.family
@@ -500,7 +496,7 @@ Rectangle {
                                 RowLayout {
                                     anchors.centerIn: parent
                                     spacing: 4
-                                    Text { text: "+"; font.pixelSize: 11; color: Theme.color.accent; font.bold: true }
+                                    NexusIcon { name: "plus"; size: 9; color: albTagHover.hovered ? Theme.color.accent : Theme.color.dimText }
                                     Text {
                                         id: albTagText
                                         text: modelData.name
@@ -534,9 +530,10 @@ Rectangle {
                         anchors.centerIn: parent
                         spacing: 6
 
-                        Text {
-                            text: ViewState.selectedItem && ViewState.selectedItem.is_favorite ? "★" : "☆"
-                            font.pixelSize: 13
+                        NexusIcon {
+                            name: "star"
+                            size: 13
+                            filled: ViewState.selectedItem && ViewState.selectedItem.is_favorite
                             color: ViewState.selectedItem && ViewState.selectedItem.is_favorite ? Theme.color.accent : Theme.color.dimText
                         }
                         Text {

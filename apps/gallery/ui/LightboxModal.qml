@@ -67,7 +67,7 @@ Rectangle {
                     RowLayout {
                         anchors.centerIn: parent
                         spacing: 6
-                        Text { text: "←"; font.pixelSize: 12; color: Theme.color.foreground }
+                        NexusIcon { name: "arrow-left"; size: 13; color: Theme.color.foreground }
                         Text {
                             id: backText
                             text: "Back to Gallery"
@@ -138,8 +138,8 @@ Rectangle {
 
                         RowLayout {
                             anchors.centerIn: parent
-                            spacing: 4
-                            Text { text: "↻"; font.pixelSize: 13; color: Theme.color.foreground }
+                            spacing: 6
+                            NexusIcon { name: "rotate"; size: 13; color: Theme.color.foreground }
                             Text {
                                 id: rotText
                                 text: "Rotate (R)"
@@ -162,10 +162,11 @@ Rectangle {
 
                         RowLayout {
                             anchors.centerIn: parent
-                            spacing: 4
-                            Text {
-                                text: ViewState.selectedItem && ViewState.selectedItem.is_favorite ? "★" : "☆"
-                                font.pixelSize: 12
+                            spacing: 6
+                            NexusIcon {
+                                name: "star"
+                                size: 13
+                                filled: ViewState.selectedItem && ViewState.selectedItem.is_favorite
                                 color: ViewState.selectedItem && ViewState.selectedItem.is_favorite ? Theme.color.background : Theme.color.foreground
                             }
                             Text {
@@ -188,10 +189,11 @@ Rectangle {
                         radius: Theme.geometry.pillRadius
                         color: revHover.hovered ? Theme.color.selection : Theme.color.surfaceElevated
 
-                        Text {
+                        NexusIcon {
                             anchors.centerIn: parent
-                            text: "📂"
-                            font.pixelSize: 12
+                            name: "folder"
+                            size: 14
+                            color: revHover.hovered ? Theme.color.accent : Theme.color.foreground
                         }
 
                         HoverHandler { id: revHover }
@@ -211,10 +213,10 @@ Rectangle {
                         radius: Theme.geometry.pillRadius
                         color: closeBtnHover.hovered ? Theme.color.danger : Theme.color.surfaceElevated
 
-                        Text {
+                        NexusIcon {
                             anchors.centerIn: parent
-                            text: "✕"
-                            font.pixelSize: 12
+                            name: "close"
+                            size: 12
                             color: closeBtnHover.hovered ? "#ffffff" : Theme.color.foreground
                         }
 
@@ -271,10 +273,10 @@ Rectangle {
             border.width: 1
             z: 210
 
-            Text {
+            NexusIcon {
                 anchors.centerIn: parent
-                text: "‹"
-                font.pixelSize: 28
+                name: "arrow-left"
+                size: 18
                 color: Theme.color.foreground
             }
 
@@ -295,10 +297,10 @@ Rectangle {
             border.width: 1
             z: 210
 
-            Text {
+            NexusIcon {
                 anchors.centerIn: parent
-                text: "›"
-                font.pixelSize: 28
+                name: "arrow-right"
+                size: 18
                 color: Theme.color.foreground
             }
 

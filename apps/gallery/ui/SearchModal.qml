@@ -97,9 +97,9 @@ Rectangle {
                     anchors.rightMargin: 16
                     spacing: 12
 
-                    Text {
-                        text: "🔍"
-                        font.pixelSize: 14
+                    NexusIcon {
+                        name: "search"
+                        size: 14
                         color: Theme.color.dimText
                     }
 

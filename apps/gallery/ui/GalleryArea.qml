@@ -309,12 +309,11 @@ Rectangle {
                                         border.width: 1.5
                                         visible: card.isSelected || cardHover.hovered || ViewState.selectedCount > 1
 
-                                        Text {
+                                        NexusIcon {
                                             anchors.centerIn: parent
                                             visible: card.isSelected
-                                            text: "✓"
-                                            font.pixelSize: 11
-                                            font.bold: true
+                                            name: "check"
+                                            size: 11
                                             color: Theme.color.background
                                         }
 
@@ -334,11 +333,12 @@ Rectangle {
                                         color: photoData.is_favorite ? Theme.color.accent : (starHover.hovered ? Theme.color.surfaceElevated : Qt.rgba(0, 0, 0, 0.4))
                                         visible: photoData.is_favorite || cardHover.hovered
 
-                                        Text {
+                                        NexusIcon {
                                             anchors.centerIn: parent
-                                            text: "★"
-                                            font.pixelSize: 11
-                                            color: photoData.is_favorite ? Theme.color.background : (starHover.hovered ? Theme.color.accent : "#ffffff")
+                                            name: "star"
+                                            size: 11
+                                            filled: photoData.is_favorite
+                                            color: photoData.is_favorite ? Theme.color.background : (starHover.hovered ? Theme.color.accent : Theme.color.foreground)
                                         }
 
                                         HoverHandler { id: starHover }
