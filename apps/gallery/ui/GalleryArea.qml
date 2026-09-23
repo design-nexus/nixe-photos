@@ -248,12 +248,44 @@ Rectangle {
                                             }
 
                                             // Fallback icon
-                                            Text {
+                                            NexusIcon {
                                                 anchors.centerIn: parent
                                                 visible: thumbImg.status !== Image.Ready
-                                                text: "📷"
-                                                font.pixelSize: 24
+                                                name: photoData.media_type === "videos" ? "film" : "camera"
+                                                size: 24
                                                 color: Theme.color.dimText
+                                            }
+
+                                            // Video indicator badge on thumbnail
+                                            Rectangle {
+                                                anchors.bottom: parent.bottom
+                                                anchors.left: parent.left
+                                                anchors.margins: 6
+                                                visible: photoData.media_type === "videos"
+                                                height: 18
+                                                width: vidBadgeRow.implicitWidth + 8
+                                                radius: 4
+                                                color: Qt.rgba(0, 0, 0, 0.65)
+
+                                                RowLayout {
+                                                    id: vidBadgeRow
+                                                    anchors.centerIn: parent
+                                                    spacing: 3
+
+                                                    NexusIcon {
+                                                        name: "film"
+                                                        size: 10
+                                                        color: "#ffffff"
+                                                    }
+
+                                                    Text {
+                                                        text: photoData.format || "VIDEO"
+                                                        font.family: Theme.font.family
+                                                        font.pixelSize: 8
+                                                        font.bold: true
+                                                        color: "#ffffff"
+                                                    }
+                                                }
                                             }
 
                                             // Selection overlay tint

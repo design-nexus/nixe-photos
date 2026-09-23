@@ -22,8 +22,36 @@ pub fn extract_photo_item(path: &Path) -> Option<PhotoItem> {
         .map(|e| e.to_string_lossy().to_uppercase())
         .unwrap_or_else(|| "IMAGE".to_string());
 
+    let ext_lower = path
+        .extension()
+        .map(|e| e.to_string_lossy().to_lowercase())
+        .unwrap_or_default();
+
     // Try reading dimensions using image crate header parser
-    let (width, height) = image::image_dimensions(path).unwrap_or((0, 0));
+    let (mut width, mut height) = image::image_dimensions(path).unwrap_or((0, 0));
+
+    // For videos, try ffprobe for width and height
+    if width == 0 && height == 0 && crate::scanner::VIDEO_EXTENSIONS.contains(&ext_lower.as_str()) {
+        if let Ok(output) = std::process::Command::new("ffprobe")
+            .arg("-v")
+            .arg("error")
+            .arg("-select_streams")
+            .arg("v:0")
+            .arg("-show_entries")
+            .arg("stream=width,height")
+            .arg("-of")
+            .arg("csv=s=x:p=0")
+            .arg(path)
+            .output()
+        {
+            let s = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            let parts: Vec<&str> = s.split('x').collect();
+            if parts.len() == 2 {
+                width = parts[0].parse().unwrap_or(0);
+                height = parts[1].parse().unwrap_or(0);
+            }
+        }
+    }
 
     // Try reading EXIF
     let exif = File::open(path).ok().and_then(|file| {
@@ -50,9 +78,11 @@ pub fn extract_photo_item(path: &Path) -> Option<PhotoItem> {
     // Parse date or derive from mtime
     let (date_taken, date_display, year, month, day) = parse_or_format_date(exif_date, mtime);
 
-    // Classify media type
+    // Classify media type strictly
     let lower_name = file_name.to_lowercase();
-    let media_type = if lower_name.contains("screenshot") {
+    let media_type = if crate::scanner::VIDEO_EXTENSIONS.contains(&ext_lower.as_str()) {
+        "videos".to_string()
+    } else if lower_name.contains("screenshot") || lower_name.contains("screen_shot") || lower_name.starts_with("scr_") {
         "screenshots".to_string()
     } else {
         "photos".to_string()

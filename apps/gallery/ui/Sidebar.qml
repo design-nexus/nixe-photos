@@ -174,6 +174,7 @@ Rectangle {
                                 property int sectionCount: {
                                     if (modelData.id === "screenshots") return ViewState.screenshotCount;
                                     if (modelData.id === "photos") return ViewState.photoCount;
+                                    if (modelData.id === "videos") return ViewState.videoCount;
                                     return 0;
                                 }
                                 visible: sectionCount > 0

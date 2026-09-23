@@ -29,6 +29,7 @@ Singleton {
     property int favoriteCount: 0
     property int screenshotCount: 0
     property int photoCount: 0
+    property int videoCount: 0
     property string totalBytesFormatted: "0 B"
     property string libraryPath: "~/Pictures"
 
@@ -48,15 +49,22 @@ Singleton {
         var favs = 0;
         var screens = 0;
         var regPhotos = 0;
+        var vids = 0;
         for (var i = 0; i < root.allPhotos.length; i++) {
             var p = root.allPhotos[i];
             if (p.is_favorite) favs++;
-            if (p.media_type === "screenshots") screens++;
-            else regPhotos++;
+            if (p.media_type === "videos") {
+                vids++;
+            } else if (p.media_type === "screenshots") {
+                screens++;
+            } else {
+                regPhotos++;
+            }
         }
         root.favoriteCount = favs;
         root.screenshotCount = screens;
         root.photoCount = regPhotos;
+        root.videoCount = vids;
 
         filterSection();
 
@@ -114,7 +122,14 @@ Singleton {
                     if (item.media_type === "screenshots") res.push(item);
                 } else if (root.currentSection === "photos") {
                     if (item.media_type === "photos") res.push(item);
+                } else if (root.currentSection === "videos") {
+                    if (item.media_type === "videos") res.push(item);
+                } else if (root.currentSection === "recent") {
+                    res.push(item);
+                } else if (root.currentSection === "trash") {
+                    // trash is empty in v1
                 } else {
+                    // "all_photos", "timeline"
                     res.push(item);
                 }
             }

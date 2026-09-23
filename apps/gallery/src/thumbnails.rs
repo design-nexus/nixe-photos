@@ -28,7 +28,19 @@ pub fn generate_thumbnail(path: &Path, mtime: u64) -> String {
         return thumb_path.to_string_lossy().to_string();
     }
 
-    // Try generating thumbnail
+    let ext_lower = path
+        .extension()
+        .map(|e| e.to_string_lossy().to_lowercase())
+        .unwrap_or_default();
+
+    // If it is a video, use ffmpegthumbnailer or ffmpeg
+    if crate::scanner::VIDEO_EXTENSIONS.contains(&ext_lower.as_str()) {
+        if generate_video_thumbnail(path, &thumb_path) {
+            return thumb_path.to_string_lossy().to_string();
+        }
+    }
+
+    // Try generating image thumbnail
     if let Ok(reader) = ImageReader::open(path) {
         if let Ok(reader) = reader.with_guessed_format() {
             if let Ok(img) = reader.decode() {
@@ -42,4 +54,52 @@ pub fn generate_thumbnail(path: &Path, mtime: u64) -> String {
 
     // Fallback to original image path
     path.to_string_lossy().to_string()
+}
+
+fn generate_video_thumbnail(video_path: &Path, thumb_path: &Path) -> bool {
+    use std::process::Command;
+
+    // Try ffmpegthumbnailer first (fast)
+    if let Ok(mut child) = Command::new("ffmpegthumbnailer")
+        .arg("-i")
+        .arg(video_path)
+        .arg("-o")
+        .arg(thumb_path)
+        .arg("-s")
+        .arg("360")
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+    {
+        if let Ok(status) = child.wait() {
+            if status.success() && thumb_path.exists() {
+                return true;
+            }
+        }
+    }
+
+    // Fallback to ffmpeg
+    if let Ok(mut child) = Command::new("ffmpeg")
+        .arg("-y")
+        .arg("-ss")
+        .arg("00:00:01")
+        .arg("-i")
+        .arg(video_path)
+        .arg("-vframes")
+        .arg("1")
+        .arg("-vf")
+        .arg("scale=360:360:force_original_aspect_ratio=decrease")
+        .arg(thumb_path)
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+    {
+        if let Ok(status) = child.wait() {
+            if status.success() && thumb_path.exists() {
+                return true;
+            }
+        }
+    }
+
+    false
 }
