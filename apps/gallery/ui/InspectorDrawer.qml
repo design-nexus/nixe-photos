@@ -113,12 +113,14 @@ Rectangle {
                 ColumnLayout {
                     anchors.centerIn: parent
                     visible: ViewState.selectedItem === null
-                    spacing: 6
+                    spacing: 8
 
-                    Text {
-                        text: "📷"
-                        font.pixelSize: 32
+                    NexusIcon {
                         Layout.alignment: Qt.AlignHCenter
+                        name: "camera"
+                        size: 32
+                        strokeWidth: 1.5
+                        color: Theme.color.dimText
                     }
 
                     Text {

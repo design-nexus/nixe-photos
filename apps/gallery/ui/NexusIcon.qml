@@ -7,6 +7,7 @@ Item {
     property string name: ""
     property color color: Theme.color.dimText
     property real size: 16
+    property real strokeWidth: 2
     property bool filled: false
 
     implicitWidth: size
@@ -50,7 +51,7 @@ Item {
 
         ShapePath {
             strokeColor: root.color
-            strokeWidth: 2
+            strokeWidth: root.strokeWidth
             fillColor: root.filled ? root.color : "transparent"
             capStyle: ShapePath.RoundCap
             joinStyle: ShapePath.RoundJoin

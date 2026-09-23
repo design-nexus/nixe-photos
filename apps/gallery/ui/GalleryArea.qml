@@ -125,16 +125,31 @@ Rectangle {
 
             ColumnLayout {
                 anchors.centerIn: parent
-                spacing: 10
+                spacing: 14
 
-                Text {
-                    text: "📷"
-                    font.pixelSize: 48
+                // Wireframe Camera Emblem
+                Rectangle {
                     Layout.alignment: Qt.AlignHCenter
+                    width: 76
+                    height: 76
+                    radius: 20
+                    color: Theme.color.surfaceElevated
+                    border.color: Theme.color.border
+                    border.width: 1
+
+                    NexusIcon {
+                        anchors.centerIn: parent
+                        name: ViewState.currentSection === "videos" ? "film" : "camera"
+                        size: 38
+                        strokeWidth: 1.5
+                        color: Theme.color.dimText
+                    }
                 }
 
                 Text {
-                    text: "No photos found"
+                    text: ViewState.currentSection === "videos" ? "No videos found" :
+                          (ViewState.currentSection === "favorites" ? "No favorites yet" :
+                          (ViewState.currentSection === "screenshots" ? "No screenshots found" : "No photos found"))
                     font.family: Theme.font.family
                     font.pixelSize: Theme.font.title
                     font.bold: true
@@ -143,7 +158,9 @@ Rectangle {
                 }
 
                 Text {
-                    text: "Add images to " + ViewState.libraryPath + " or click Rescan."
+                    text: ViewState.currentSection === "videos" ? "Add video files (.mp4, .mov, .mkv) to " + ViewState.libraryPath :
+                          (ViewState.currentSection === "favorites" ? "Press F or click the star to favorite any photo" :
+                          "Add media to " + ViewState.libraryPath + " or click Rescan")
                     font.family: Theme.font.family
                     font.pixelSize: Theme.font.bodySmall
                     color: Theme.color.dimText
