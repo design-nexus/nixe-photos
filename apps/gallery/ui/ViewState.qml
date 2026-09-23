@@ -330,12 +330,103 @@ Singleton {
         }
     }
 
+    property int gridColumns: 4
+
     function navigateGrid(delta) {
         if (root.displayedPhotos.length === 0) return;
         var nextIdx = root.selectedIndex + delta;
         if (nextIdx < 0) nextIdx = 0;
         if (nextIdx >= root.displayedPhotos.length) nextIdx = root.displayedPhotos.length - 1;
         root.selectSingle(root.displayedPhotos[nextIdx], nextIdx);
+    }
+
+    function navigateVertical(direction) {
+        if (!root.displayedPhotos || root.displayedPhotos.length === 0) return;
+        if (!root.selectedItem || root.selectedIndex === -1) {
+            root.selectSingle(root.displayedPhotos[0], 0);
+            return;
+        }
+
+        // If no timeline groups or single group, use standard column step
+        if (!root.timelineGroups || root.timelineGroups.length <= 1) {
+            var step = Math.max(1, root.gridColumns) * direction;
+            navigateGrid(step);
+            return;
+        }
+
+        var curId = root.selectedItem.id;
+        var groupIdx = -1;
+        var itemInGroupIdx = -1;
+
+        for (var g = 0; g < root.timelineGroups.length; g++) {
+            var grp = root.timelineGroups[g];
+            for (var it = 0; it < grp.items.length; it++) {
+                if (grp.items[it].id === curId) {
+                    groupIdx = g;
+                    itemInGroupIdx = it;
+                    break;
+                }
+            }
+            if (groupIdx !== -1) break;
+        }
+
+        if (groupIdx === -1) {
+            var fallbackStep = Math.max(1, root.gridColumns) * direction;
+            navigateGrid(fallbackStep);
+            return;
+        }
+
+        var cols = Math.max(1, root.gridColumns);
+        var curGroup = root.timelineGroups[groupIdx];
+        var curRow = Math.floor(itemInGroupIdx / cols);
+        var curCol = itemInGroupIdx % cols;
+        var totalRows = Math.ceil(curGroup.items.length / cols);
+
+        if (direction > 0) {
+            // Moving Down
+            if (curRow + 1 < totalRows) {
+                // Next row within same day / group
+                var targetIdx = (curRow + 1) * cols + curCol;
+                if (targetIdx >= curGroup.items.length) {
+                    targetIdx = curGroup.items.length - 1;
+                }
+                var item = curGroup.items[targetIdx];
+                root.selectSingle(item, root.findIndexById(item.id));
+            } else {
+                // Move to next timeline group (next day/month/year) without skipping
+                if (groupIdx + 1 < root.timelineGroups.length) {
+                    var nextGroup = root.timelineGroups[groupIdx + 1];
+                    if (nextGroup.items.length > 0) {
+                        var targetIdx = Math.min(curCol, nextGroup.items.length - 1);
+                        var item = nextGroup.items[targetIdx];
+                        root.selectSingle(item, root.findIndexById(item.id));
+                    }
+                }
+            }
+        } else if (direction < 0) {
+            // Moving Up
+            if (curRow > 0) {
+                // Previous row within same day / group
+                var targetIdx = (curRow - 1) * cols + curCol;
+                var item = curGroup.items[targetIdx];
+                root.selectSingle(item, root.findIndexById(item.id));
+            } else {
+                // Move to previous timeline group (previous day/month/year)
+                if (groupIdx > 0) {
+                    var prevGroup = root.timelineGroups[groupIdx - 1];
+                    if (prevGroup.items.length > 0) {
+                        var prevTotalRows = Math.ceil(prevGroup.items.length / cols);
+                        var prevLastRow = Math.max(0, prevTotalRows - 1);
+                        var targetIdx = prevLastRow * cols + curCol;
+                        if (targetIdx >= prevGroup.items.length) {
+                            targetIdx = prevGroup.items.length - 1;
+                        }
+                        var item = prevGroup.items[targetIdx];
+                        root.selectSingle(item, root.findIndexById(item.id));
+                    }
+                }
+            }
+        }
     }
 
     function findIndexById(id) {

@@ -7,6 +7,36 @@ Rectangle {
     id: root
     color: Theme.color.background
 
+    readonly property real baseCardSize: 110 + ViewState.zoomLevel * 150
+    readonly property real availableGridWidth: galleryScroll && galleryScroll.width > 0 ? galleryScroll.width : (root.width - 36)
+
+    onAvailableGridWidthChanged: updateColumns()
+    onBaseCardSizeChanged: updateColumns()
+
+    function updateColumns() {
+        var spacing = 12;
+        var cols = Math.max(1, Math.floor((availableGridWidth + spacing) / (baseCardSize + spacing)));
+        ViewState.gridColumns = cols;
+    }
+
+    Component.onCompleted: updateColumns()
+
+    function ensureVisible(item) {
+        if (!item || !galleryScroll || !galleryScroll.visible) return;
+        var flick = galleryScroll.contentItem;
+        if (!flick) return;
+
+        var pos = item.mapToItem(galleryScroll, 0, 0);
+        var margin = 24;
+
+        if (pos.y < margin) {
+            flick.contentY = Math.max(0, flick.contentY + pos.y - margin);
+        } else if (pos.y + item.height > galleryScroll.height - margin) {
+            var maxScroll = Math.max(0, flick.contentHeight - galleryScroll.height);
+            flick.contentY = Math.min(maxScroll, flick.contentY + (pos.y + item.height - galleryScroll.height + margin));
+        }
+    }
+
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 18
@@ -247,6 +277,7 @@ Rectangle {
 
         // Grouped Timeline Grid
         ScrollView {
+            id: galleryScroll
             visible: ViewState.displayedPhotos.length > 0
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -302,14 +333,19 @@ Rectangle {
                                     id: card
                                     property var photoData: modelData
                                     property bool isSelected: ViewState.isSelected(modelData.id)
-                                    property real baseCardSize: 110 + ViewState.zoomLevel * 150
-                                    width: baseCardSize
-                                    height: baseCardSize + 24
+                                    width: root.baseCardSize
+                                    height: root.baseCardSize + 24
                                     radius: Theme.geometry.radiusMedium
                                     color: Theme.color.surface
                                     border.color: isSelected ? Theme.color.accent : (cardHover.hovered ? Theme.color.selection : Theme.color.border)
                                     border.width: isSelected ? 2 : 1
                                     clip: true
+
+                                    onIsSelectedChanged: {
+                                        if (isSelected) {
+                                            root.ensureVisible(card);
+                                        }
+                                    }
 
                                     Behavior on width {
                                         NumberAnimation { duration: 80 }

@@ -80,12 +80,12 @@ ShellRoot {
                     event.accepted = true;
                 } else if (event.key === Qt.Key_Up) {
                     if (!ViewState.lightboxOpen) {
-                        ViewState.navigateGrid(-4);
+                        ViewState.navigateVertical(-1);
                     }
                     event.accepted = true;
                 } else if (event.key === Qt.Key_Down) {
                     if (!ViewState.lightboxOpen) {
-                        ViewState.navigateGrid(4);
+                        ViewState.navigateVertical(1);
                     }
                     event.accepted = true;
                 }
