@@ -24,6 +24,7 @@ enum Request {
     GetPhotos { section: Option<String> },
     ToggleFavorite { id: String },
     CreateAlbum { name: String },
+    RenameAlbum { album_id: String, name: String },
     AddPhotosToAlbum { album_id: String, photo_ids: Vec<String> },
     RemovePhotoFromAlbum { album_id: String, photo_id: String },
     DeleteAlbum { album_id: String },
@@ -145,6 +146,31 @@ fn load_albums() -> Vec<Album> {
     }]
 }
 
+fn get_favorites_file() -> PathBuf {
+    let dir = dirs::data_local_dir()
+        .map(|d| d.join("nexus-photos"))
+        .unwrap_or_else(|| PathBuf::from("."));
+    let _ = fs::create_dir_all(&dir);
+    dir.join("favorites.json")
+}
+
+fn load_favorites() -> Vec<String> {
+    let path = get_favorites_file();
+    if let Ok(content) = fs::read_to_string(&path) {
+        if let Ok(favs) = serde_json::from_str(&content) {
+            return favs;
+        }
+    }
+    Vec::new()
+}
+
+fn save_favorites(favs: &[String]) {
+    let path = get_favorites_file();
+    if let Ok(json) = serde_json::to_string_pretty(favs) {
+        let _ = fs::write(path, json);
+    }
+}
+
 fn save_albums(albums: &[Album]) {
     let path = get_albums_file();
     if let Ok(json) = serde_json::to_string_pretty(albums) {
@@ -185,7 +211,13 @@ fn run_backend() -> io::Result<()> {
     let albums_store: Arc<Mutex<Vec<Album>>> = Arc::new(Mutex::new(load_albums()));
 
     // Initial scan on startup
-    let initial_photos = scan_directory(&pictures_dir);
+    let favs = load_favorites();
+    let mut initial_photos = scan_directory(&pictures_dir);
+    for p in initial_photos.iter_mut() {
+        if favs.contains(&p.id) {
+            p.is_favorite = true;
+        }
+    }
     let total_bytes: u64 = initial_photos.iter().map(|p| p.file_size).sum();
     let total_items = initial_photos.len();
 
@@ -244,7 +276,13 @@ fn run_backend() -> io::Result<()> {
                 let target_dir = path
                     .map(PathBuf::from)
                     .unwrap_or_else(|| pictures_dir.clone());
-                let scanned = scan_directory(&target_dir);
+                let mut scanned = scan_directory(&target_dir);
+                let favs = load_favorites();
+                for p in scanned.iter_mut() {
+                    if favs.contains(&p.id) {
+                        p.is_favorite = true;
+                    }
+                }
                 let bytes: u64 = scanned.iter().map(|p| p.file_size).sum();
                 let count = scanned.len();
                 {
@@ -296,6 +334,16 @@ fn run_backend() -> io::Result<()> {
                         break;
                     }
                 }
+                let mut favs = load_favorites();
+                if found_state {
+                    if !favs.contains(&id) {
+                        favs.push(id.clone());
+                    }
+                } else {
+                    favs.retain(|f| f != &id);
+                }
+                save_favorites(&favs);
+
                 Response::FavoriteToggled {
                     id,
                     is_favorite: found_state,
@@ -313,6 +361,17 @@ fn run_backend() -> io::Result<()> {
                 albums.push(album.clone());
                 save_albums(&albums);
                 Response::AlbumCreated { album }
+            }
+            Ok(Request::RenameAlbum { album_id, name }) => {
+                let mut albums = albums_store.lock().unwrap();
+                for a in albums.iter_mut() {
+                    if a.id == album_id {
+                        a.name = name;
+                        break;
+                    }
+                }
+                save_albums(&albums);
+                Response::Albums { albums: albums.clone() }
             }
             Ok(Request::AddPhotosToAlbum { album_id, photo_ids }) => {
                 let mut albums = albums_store.lock().unwrap();

@@ -59,26 +59,44 @@ Rectangle {
 
                 // Back / Close Button
                 Rectangle {
-                    width: backText.implicitWidth + 18
-                    height: 28
+                    width: 32
+                    height: 32
                     radius: Theme.geometry.pillRadius
                     color: backHover.hovered ? Theme.color.selection : Theme.color.surfaceElevated
 
-                    RowLayout {
+                    NexusIcon {
                         anchors.centerIn: parent
-                        spacing: 6
-                        NexusIcon { name: "arrow-left"; size: 13; color: Theme.color.foreground }
-                        Text {
-                            id: backText
-                            text: "Back to Gallery"
-                            font.family: Theme.font.family
-                            font.pixelSize: Theme.font.bodySmall
-                            color: Theme.color.foreground
-                        }
+                        name: "arrow-left"
+                        size: 14
+                        color: Theme.color.foreground
                     }
 
                     HoverHandler { id: backHover }
                     TapHandler { onTapped: ViewState.closeLightbox() }
+
+                    // Hover Tooltip
+                    Rectangle {
+                        visible: backHover.hovered
+                        anchors.top: parent.bottom
+                        anchors.topMargin: 8
+                        anchors.left: parent.left
+                        width: backTipText.implicitWidth + 14
+                        height: 24
+                        radius: 4
+                        color: Theme.color.surfaceElevated
+                        border.color: Theme.color.border
+                        border.width: 1
+                        z: 999
+
+                        Text {
+                            id: backTipText
+                            anchors.centerIn: parent
+                            text: "Back to Gallery (Esc)"
+                            font.family: Theme.font.family
+                            font.pixelSize: Theme.font.caption
+                            color: Theme.color.foreground
+                        }
+                    }
                 }
 
                 // File name & date
@@ -131,60 +149,94 @@ Rectangle {
 
                     // Rotate 90 deg
                     Rectangle {
-                        height: 28
-                        width: rotText.implicitWidth + 16
+                        height: 32
+                        width: 32
                         radius: Theme.geometry.pillRadius
                         color: rotHover.hovered ? Theme.color.selection : Theme.color.surfaceElevated
 
-                        RowLayout {
+                        NexusIcon {
                             anchors.centerIn: parent
-                            spacing: 6
-                            NexusIcon { name: "rotate"; size: 13; color: Theme.color.foreground }
-                            Text {
-                                id: rotText
-                                text: "Rotate (R)"
-                                font.family: Theme.font.family
-                                font.pixelSize: Theme.font.bodySmall
-                                color: Theme.color.foreground
-                            }
+                            name: "rotate"
+                            size: 14
+                            color: Theme.color.foreground
                         }
 
                         HoverHandler { id: rotHover }
                         TapHandler { onTapped: ViewState.rotateCurrent() }
+
+                        // Hover Tooltip
+                        Rectangle {
+                            visible: rotHover.hovered
+                            anchors.top: parent.bottom
+                            anchors.topMargin: 8
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            width: rotTipText.implicitWidth + 14
+                            height: 24
+                            radius: 4
+                            color: Theme.color.surfaceElevated
+                            border.color: Theme.color.border
+                            border.width: 1
+                            z: 999
+
+                            Text {
+                                id: rotTipText
+                                anchors.centerIn: parent
+                                text: "Rotate 90° (R)"
+                                font.family: Theme.font.family
+                                font.pixelSize: Theme.font.caption
+                                color: Theme.color.foreground
+                            }
+                        }
                     }
 
                     // Favorite Button
                     Rectangle {
-                        height: 28
-                        width: favBtnText.implicitWidth + 16
+                        id: favModalBtn
+                        height: 32
+                        width: 32
                         radius: Theme.geometry.pillRadius
-                        color: ViewState.selectedItem && ViewState.selectedItem.is_favorite ? Theme.color.accent : (favHover.hovered ? Theme.color.selection : Theme.color.surfaceElevated)
+                        property bool isFav: ViewState.selectedItem ? ViewState.isFavorite(ViewState.selectedItem.id) : false
+                        color: isFav ? Theme.color.accent : (favHover.hovered ? Theme.color.selection : Theme.color.surfaceElevated)
 
-                        RowLayout {
+                        NexusIcon {
                             anchors.centerIn: parent
-                            spacing: 6
-                            NexusIcon {
-                                name: "star"
-                                size: 13
-                                filled: ViewState.selectedItem && ViewState.selectedItem.is_favorite
-                                color: ViewState.selectedItem && ViewState.selectedItem.is_favorite ? Theme.color.background : Theme.color.foreground
-                            }
-                            Text {
-                                id: favBtnText
-                                text: "Favorite (F)"
-                                font.family: Theme.font.family
-                                font.pixelSize: Theme.font.bodySmall
-                                color: ViewState.selectedItem && ViewState.selectedItem.is_favorite ? Theme.color.background : Theme.color.foreground
-                            }
+                            name: "star"
+                            size: 14
+                            filled: favModalBtn.isFav
+                            color: favModalBtn.isFav ? Theme.color.background : Theme.color.foreground
                         }
 
                         HoverHandler { id: favHover }
                         TapHandler { onTapped: ViewState.toggleSelectedFavorite() }
+
+                        // Hover Tooltip
+                        Rectangle {
+                            visible: favHover.hovered
+                            anchors.top: parent.bottom
+                            anchors.topMargin: 8
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            width: favTipText.implicitWidth + 14
+                            height: 24
+                            radius: 4
+                            color: Theme.color.surfaceElevated
+                            border.color: Theme.color.border
+                            border.width: 1
+                            z: 999
+
+                            Text {
+                                id: favTipText
+                                anchors.centerIn: parent
+                                text: favModalBtn.isFav ? "Remove from Favorites (F)" : "Add to Favorites (F)"
+                                font.family: Theme.font.family
+                                font.pixelSize: Theme.font.caption
+                                color: Theme.color.foreground
+                            }
+                        }
                     }
 
-                    // Reveal in Strata
+                    // Reveal in Strata / File Manager
                     Rectangle {
-                        height: 28
+                        height: 32
                         width: 32
                         radius: Theme.geometry.pillRadius
                         color: revHover.hovered ? Theme.color.selection : Theme.color.surfaceElevated
@@ -204,12 +256,36 @@ Rectangle {
                                 }
                             }
                         }
+
+                        // Hover Tooltip
+                        Rectangle {
+                            visible: revHover.hovered
+                            anchors.top: parent.bottom
+                            anchors.topMargin: 8
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            width: revTipText.implicitWidth + 14
+                            height: 24
+                            radius: 4
+                            color: Theme.color.surfaceElevated
+                            border.color: Theme.color.border
+                            border.width: 1
+                            z: 999
+
+                            Text {
+                                id: revTipText
+                                anchors.centerIn: parent
+                                text: "Reveal in File Manager (Ctrl+O)"
+                                font.family: Theme.font.family
+                                font.pixelSize: Theme.font.caption
+                                color: Theme.color.foreground
+                            }
+                        }
                     }
 
                     // Close Button
                     Rectangle {
-                        height: 28
-                        width: 28
+                        height: 32
+                        width: 32
                         radius: Theme.geometry.pillRadius
                         color: closeBtnHover.hovered ? Theme.color.danger : Theme.color.surfaceElevated
 
@@ -222,6 +298,30 @@ Rectangle {
 
                         HoverHandler { id: closeBtnHover }
                         TapHandler { onTapped: ViewState.closeLightbox() }
+
+                        // Hover Tooltip
+                        Rectangle {
+                            visible: closeBtnHover.hovered
+                            anchors.top: parent.bottom
+                            anchors.topMargin: 8
+                            anchors.right: parent.right
+                            width: closeTipText.implicitWidth + 14
+                            height: 24
+                            radius: 4
+                            color: Theme.color.surfaceElevated
+                            border.color: Theme.color.border
+                            border.width: 1
+                            z: 999
+
+                            Text {
+                                id: closeTipText
+                                anchors.centerIn: parent
+                                text: "Close Lightbox (Esc)"
+                                font.family: Theme.font.family
+                                font.pixelSize: Theme.font.caption
+                                color: Theme.color.foreground
+                            }
+                        }
                     }
                 }
             }

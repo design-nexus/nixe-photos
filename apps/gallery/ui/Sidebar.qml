@@ -250,6 +250,7 @@ Rectangle {
                     Rectangle {
                         id: userAlbumRow
                         property bool active: ViewState.currentSection === modelData.id
+                        property bool isEditing: false
                         Layout.fillWidth: true
                         height: 30
                         radius: Theme.geometry.pillRadius
@@ -258,16 +259,18 @@ Rectangle {
                         RowLayout {
                             anchors.fill: parent
                             anchors.leftMargin: 8
-                            anchors.rightMargin: 8
-                            spacing: 8
+                            anchors.rightMargin: 6
+                            spacing: 6
 
                             NexusIcon {
                                 name: "folder"
-                                size: 15
+                                size: 14
                                 color: userAlbumRow.active ? Theme.color.accent : (userAlbumHover.hovered ? Theme.color.foreground : Theme.color.dimText)
                             }
 
+                            // View Mode: Display album name
                             Text {
+                                visible: !userAlbumRow.isEditing
                                 text: modelData.name
                                 font.family: Theme.font.family
                                 font.pixelSize: Theme.font.body
@@ -277,8 +280,62 @@ Rectangle {
                                 Layout.fillWidth: true
                             }
 
+                            // Edit Mode: Inline TextInput
                             Rectangle {
-                                visible: modelData.photo_ids && modelData.photo_ids.length > 0
+                                visible: userAlbumRow.isEditing
+                                Layout.fillWidth: true
+                                height: 22
+                                radius: 4
+                                color: Theme.color.background
+                                border.color: Theme.color.accent
+                                border.width: 1
+
+                                TextInput {
+                                    id: inlineInput
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 4
+                                    anchors.rightMargin: 4
+                                    verticalAlignment: TextInput.AlignVCenter
+                                    text: modelData.name
+                                    font.family: Theme.font.family
+                                    font.pixelSize: Theme.font.bodySmall
+                                    color: Theme.color.foreground
+                                    selectByMouse: true
+
+                                    Connections {
+                                        target: userAlbumRow
+                                        function onIsEditingChanged() {
+                                            if (userAlbumRow.isEditing) {
+                                                inlineInput.text = modelData.name;
+                                                inlineInput.forceActiveFocus();
+                                                inlineInput.selectAll();
+                                            }
+                                        }
+                                    }
+
+                                    Keys.onReturnPressed: commitEdit()
+                                    Keys.onEnterPressed: commitEdit()
+                                    Keys.onEscapePressed: {
+                                        inlineInput.text = modelData.name;
+                                        userAlbumRow.isEditing = false;
+                                    }
+                                    onEditingFinished: commitEdit()
+
+                                    function commitEdit() {
+                                        if (!userAlbumRow.isEditing) return;
+                                        userAlbumRow.isEditing = false;
+                                        var newName = text.trim();
+                                        if (newName.length > 0 && newName !== modelData.name) {
+                                            Backend.renameAlbum(modelData.id, newName);
+                                            ViewState.showToast("Album renamed to '" + newName + "'");
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Count Badge (when not editing and not hovering)
+                            Rectangle {
+                                visible: !userAlbumRow.isEditing && !userAlbumHover.hovered && modelData.photo_ids && modelData.photo_ids.length > 0
                                 width: albumCountText.implicitWidth + 8
                                 height: 16
                                 radius: 8
@@ -292,11 +349,66 @@ Rectangle {
                                     color: Theme.color.dimText
                                 }
                             }
+
+                            // Action Buttons (visible when hovered and not editing)
+                            RowLayout {
+                                visible: !userAlbumRow.isEditing && userAlbumHover.hovered
+                                spacing: 2
+
+                                // Edit button
+                                Rectangle {
+                                    width: 20
+                                    height: 20
+                                    radius: 10
+                                    color: editAlbumHover.hovered ? Theme.color.selection : "transparent"
+
+                                    NexusIcon {
+                                        anchors.centerIn: parent
+                                        name: "edit"
+                                        size: 11
+                                        color: editAlbumHover.hovered ? Theme.color.foreground : Theme.color.dimText
+                                    }
+
+                                    HoverHandler { id: editAlbumHover }
+                                    TapHandler {
+                                        onTapped: {
+                                            userAlbumRow.isEditing = true;
+                                        }
+                                    }
+                                }
+
+                                // Delete button
+                                Rectangle {
+                                    width: 20
+                                    height: 20
+                                    radius: 10
+                                    color: delAlbumHover.hovered ? Theme.color.danger : "transparent"
+
+                                    NexusIcon {
+                                        anchors.centerIn: parent
+                                        name: "trash"
+                                        size: 11
+                                        color: delAlbumHover.hovered ? "#ffffff" : Theme.color.dimText
+                                    }
+
+                                    HoverHandler { id: delAlbumHover }
+                                    TapHandler {
+                                        onTapped: {
+                                            Backend.deleteAlbum(modelData.id);
+                                            ViewState.showToast("Album '" + modelData.name + "' deleted");
+                                        }
+                                    }
+                                }
+                            }
                         }
 
                         HoverHandler { id: userAlbumHover }
                         TapHandler {
+                            enabled: !userAlbumRow.isEditing
                             onTapped: ViewState.setSection(modelData.id, modelData.name)
+                            onDoubleTapped: {
+                                userAlbumRow.isEditing = true;
+                            }
                         }
                     }
                 }

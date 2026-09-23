@@ -38,6 +38,75 @@ Rectangle {
 
             Item { Layout.fillWidth: true }
 
+            // Album Management Actions (When viewing an album)
+            RowLayout {
+                spacing: 8
+                visible: ViewState.currentSection.indexOf("album_") === 0
+
+                // Rename Album Button
+                Rectangle {
+                    height: 26
+                    width: renameText.implicitWidth + 28
+                    radius: Theme.geometry.pillRadius
+                    color: renameHover.hovered ? Theme.color.selection : Theme.color.surface
+                    border.color: Theme.color.border
+                    border.width: 1
+
+                    RowLayout {
+                        anchors.centerIn: parent
+                        spacing: 6
+                        NexusIcon { name: "edit"; size: 12; color: Theme.color.foreground }
+                        Text {
+                            id: renameText
+                            text: "Rename Album"
+                            font.family: Theme.font.family
+                            font.pixelSize: Theme.font.bodySmall
+                            color: Theme.color.foreground
+                        }
+                    }
+                    HoverHandler { id: renameHover }
+                    TapHandler {
+                        onTapped: ViewState.openRenameAlbumDialog(ViewState.currentSection, ViewState.currentSectionTitle)
+                    }
+                }
+
+                // Delete Album Button
+                Rectangle {
+                    height: 26
+                    width: delAlbText.implicitWidth + 28
+                    radius: Theme.geometry.pillRadius
+                    color: delAlbHover.hovered ? Theme.color.danger : Theme.color.surface
+                    border.color: Theme.color.border
+                    border.width: 1
+
+                    RowLayout {
+                        anchors.centerIn: parent
+                        spacing: 6
+                        NexusIcon {
+                            name: "trash"
+                            size: 12
+                            color: delAlbHover.hovered ? "#ffffff" : Theme.color.danger
+                        }
+                        Text {
+                            id: delAlbText
+                            text: "Delete Album"
+                            font.family: Theme.font.family
+                            font.pixelSize: Theme.font.bodySmall
+                            color: delAlbHover.hovered ? "#ffffff" : Theme.color.danger
+                        }
+                    }
+                    HoverHandler { id: delAlbHover }
+                    TapHandler {
+                        onTapped: {
+                            var albId = ViewState.currentSection;
+                            var albTitle = ViewState.currentSectionTitle;
+                            Backend.deleteAlbum(albId);
+                            ViewState.showToast("Album '" + albTitle + "' deleted");
+                        }
+                    }
+                }
+            }
+
             // Select All / Clear Selection Pills
             RowLayout {
                 spacing: 8
@@ -90,7 +159,7 @@ Rectangle {
             // Rescan Library Button
             Rectangle {
                 height: 26
-                width: rescanText.implicitWidth + 24
+                width: rescanText.implicitWidth + 26
                 radius: Theme.geometry.pillRadius
                 color: rescanHover.hovered ? Theme.color.selection : Theme.color.surface
                 border.color: Theme.color.border
@@ -99,7 +168,11 @@ Rectangle {
                 RowLayout {
                     anchors.centerIn: parent
                     spacing: 6
-                    Text { text: "🔄"; font.pixelSize: 10 }
+                    NexusIcon {
+                        name: "rotate"
+                        size: 11
+                        color: Theme.color.foreground
+                    }
                     Text {
                         id: rescanText
                         text: "Rescan"
@@ -139,7 +212,8 @@ Rectangle {
 
                     NexusIcon {
                         anchors.centerIn: parent
-                        name: ViewState.currentSection === "videos" ? "film" : "camera"
+                        name: ViewState.currentSection.indexOf("album_") === 0 ? "folder" :
+                              (ViewState.currentSection === "videos" ? "film" : "camera")
                         size: 38
                         strokeWidth: 1.5
                         color: Theme.color.dimText
@@ -147,9 +221,10 @@ Rectangle {
                 }
 
                 Text {
-                    text: ViewState.currentSection === "videos" ? "No videos found" :
+                    text: ViewState.currentSection.indexOf("album_") === 0 ? "This album is empty" :
+                          (ViewState.currentSection === "videos" ? "No videos found" :
                           (ViewState.currentSection === "favorites" ? "No favorites yet" :
-                          (ViewState.currentSection === "screenshots" ? "No screenshots found" : "No photos found"))
+                          (ViewState.currentSection === "screenshots" ? "No screenshots found" : "No photos found")))
                     font.family: Theme.font.family
                     font.pixelSize: Theme.font.title
                     font.bold: true
@@ -158,9 +233,10 @@ Rectangle {
                 }
 
                 Text {
-                    text: ViewState.currentSection === "videos" ? "Add video files (.mp4, .mov, .mkv) to " + ViewState.libraryPath :
+                    text: ViewState.currentSection.indexOf("album_") === 0 ? "Select photos from All Photos and add them to this album" :
+                          (ViewState.currentSection === "videos" ? "Add video files (.mp4, .mov, .mkv) to " + ViewState.libraryPath :
                           (ViewState.currentSection === "favorites" ? "Press F or click the star to favorite any photo" :
-                          "Add media to " + ViewState.libraryPath + " or click Rescan")
+                          "Add media to " + ViewState.libraryPath + " or click Rescan"))
                     font.family: Theme.font.family
                     font.pixelSize: Theme.font.bodySmall
                     color: Theme.color.dimText
@@ -345,60 +421,10 @@ Rectangle {
                                         }
                                     }
 
-                                    // Top-Left Multi-Selection Checkmark Badge
-                                    Rectangle {
-                                        anchors.top: parent.top
-                                        anchors.left: parent.left
-                                        anchors.margins: 6
-                                        width: 22
-                                        height: 22
-                                        radius: 11
-                                        color: card.isSelected ? Theme.color.accent : (cardHover.hovered ? Qt.rgba(0, 0, 0, 0.5) : "transparent")
-                                        border.color: card.isSelected ? Theme.color.accent : (cardHover.hovered ? "#ffffff" : "transparent")
-                                        border.width: 1.5
-                                        visible: card.isSelected || cardHover.hovered || ViewState.selectedCount > 1
-
-                                        NexusIcon {
-                                            anchors.centerIn: parent
-                                            visible: card.isSelected
-                                            name: "check"
-                                            size: 11
-                                            color: Theme.color.background
-                                        }
-
-                                        TapHandler {
-                                            onTapped: ViewState.toggleSelect(photoData)
-                                        }
-                                    }
-
-                                    // Top-Right Favorite Star Button
-                                    Rectangle {
-                                        anchors.top: parent.top
-                                        anchors.right: parent.right
-                                        anchors.margins: 6
-                                        width: 22
-                                        height: 22
-                                        radius: 11
-                                        color: photoData.is_favorite ? Theme.color.accent : (starHover.hovered ? Theme.color.surfaceElevated : Qt.rgba(0, 0, 0, 0.4))
-                                        visible: photoData.is_favorite || cardHover.hovered
-
-                                        NexusIcon {
-                                            anchors.centerIn: parent
-                                            name: "star"
-                                            size: 11
-                                            filled: photoData.is_favorite
-                                            color: photoData.is_favorite ? Theme.color.background : (starHover.hovered ? Theme.color.accent : Theme.color.foreground)
-                                        }
-
-                                        HoverHandler { id: starHover }
-                                        TapHandler {
-                                            onTapped: Backend.toggleFavorite(photoData.id)
-                                        }
-                                    }
-
-                                    HoverHandler { id: cardHover }
+                                    // Card Click & Selection Area (z: 1)
                                     MouseArea {
                                         anchors.fill: parent
+                                        z: 1
                                         acceptedButtons: Qt.LeftButton
                                         onClicked: function(mouse) {
                                             if (mouse.modifiers & Qt.ControlModifier) {
@@ -417,6 +443,76 @@ Rectangle {
                                             ViewState.openLightbox();
                                         }
                                     }
+
+                                    // Top-Left Multi-Selection Checkmark Badge (z: 10)
+                                    Rectangle {
+                                        z: 10
+                                        anchors.top: parent.top
+                                        anchors.left: parent.left
+                                        anchors.margins: 6
+                                        width: 24
+                                        height: 24
+                                        radius: 12
+                                        color: card.isSelected ? Theme.color.accent : (cardHover.hovered ? Qt.rgba(0, 0, 0, 0.5) : "transparent")
+                                        border.color: card.isSelected ? Theme.color.accent : (cardHover.hovered ? "#ffffff" : "transparent")
+                                        border.width: 1.5
+                                        visible: card.isSelected || cardHover.hovered || ViewState.selectedCount > 1
+
+                                        NexusIcon {
+                                            anchors.centerIn: parent
+                                            visible: card.isSelected
+                                            name: "check"
+                                            size: 11
+                                            color: Theme.color.background
+                                        }
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            cursorShape: Qt.PointingHandCursor
+                                            acceptedButtons: Qt.LeftButton
+                                            onClicked: function(mouse) {
+                                                mouse.accepted = true;
+                                                ViewState.toggleSelect(photoData);
+                                            }
+                                        }
+                                    }
+
+                                    // Top-Right Favorite Star Button (z: 10)
+                                    Rectangle {
+                                        id: favBtn
+                                        z: 10
+                                        anchors.top: parent.top
+                                        anchors.right: parent.right
+                                        anchors.margins: 6
+                                        width: 26
+                                        height: 26
+                                        radius: 13
+                                        property bool isFav: ViewState.isFavorite(photoData.id)
+                                        color: isFav ? Theme.color.accent : (favMouse.containsMouse ? Theme.color.surfaceElevated : Qt.rgba(0, 0, 0, 0.5))
+                                        visible: isFav || cardHover.hovered
+
+                                        NexusIcon {
+                                            anchors.centerIn: parent
+                                            name: "star"
+                                            size: 13
+                                            filled: favBtn.isFav
+                                            color: favBtn.isFav ? Theme.color.background : (favMouse.containsMouse ? Theme.color.accent : Theme.color.foreground)
+                                        }
+
+                                        MouseArea {
+                                            id: favMouse
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            cursorShape: Qt.PointingHandCursor
+                                            acceptedButtons: Qt.LeftButton
+                                            onClicked: function(mouse) {
+                                                mouse.accepted = true;
+                                                Backend.toggleFavorite(photoData.id);
+                                            }
+                                        }
+                                    }
+
+                                    HoverHandler { id: cardHover }
                                 }
                             }
                         }

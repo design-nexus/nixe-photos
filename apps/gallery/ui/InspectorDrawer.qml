@@ -521,6 +521,8 @@ Rectangle {
 
                 // Favorite Button
                 Rectangle {
+                    id: favInspBtn
+                    property bool isFav: ViewState.selectedItem ? ViewState.isFavorite(ViewState.selectedItem.id) : false
                     Layout.fillWidth: true
                     height: 32
                     radius: Theme.geometry.pillRadius
@@ -535,11 +537,11 @@ Rectangle {
                         NexusIcon {
                             name: "star"
                             size: 13
-                            filled: ViewState.selectedItem && ViewState.selectedItem.is_favorite
-                            color: ViewState.selectedItem && ViewState.selectedItem.is_favorite ? Theme.color.accent : Theme.color.dimText
+                            filled: favInspBtn.isFav
+                            color: favInspBtn.isFav ? Theme.color.accent : Theme.color.dimText
                         }
                         Text {
-                            text: ViewState.selectedItem && ViewState.selectedItem.is_favorite ? "Remove from Favorites" : "Add to Favorites (F)"
+                            text: favInspBtn.isFav ? "Remove from Favorites" : "Add to Favorites (F)"
                             font.family: Theme.font.family
                             font.pixelSize: Theme.font.bodySmall
                             font.bold: true
@@ -552,6 +554,45 @@ Rectangle {
                         onTapped: {
                             if (ViewState.selectedItem) {
                                 Backend.toggleFavorite(ViewState.selectedItem.id);
+                            }
+                        }
+                    }
+                }
+
+                // Remove from Album Button (when in an album section)
+                Rectangle {
+                    visible: ViewState.currentSection.indexOf("album_") === 0 && ViewState.selectedItem !== null
+                    Layout.fillWidth: true
+                    height: 32
+                    radius: Theme.geometry.pillRadius
+                    color: remAlbHover.hovered ? Theme.color.danger : Theme.color.surfaceElevated
+                    border.color: Theme.color.border
+                    border.width: 1
+
+                    RowLayout {
+                        anchors.centerIn: parent
+                        spacing: 6
+
+                        NexusIcon {
+                            name: "trash"
+                            size: 12
+                            color: remAlbHover.hovered ? "#ffffff" : Theme.color.dimText
+                        }
+                        Text {
+                            text: "Remove from Album"
+                            font.family: Theme.font.family
+                            font.pixelSize: Theme.font.bodySmall
+                            font.bold: true
+                            color: remAlbHover.hovered ? "#ffffff" : Theme.color.foreground
+                        }
+                    }
+
+                    HoverHandler { id: remAlbHover }
+                    TapHandler {
+                        onTapped: {
+                            if (ViewState.selectedItem) {
+                                Backend.removePhotoFromAlbum(ViewState.currentSection, ViewState.selectedItem.id);
+                                ViewState.showToast("Removed from album");
                             }
                         }
                     }

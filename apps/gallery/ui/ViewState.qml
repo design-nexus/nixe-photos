@@ -33,9 +33,34 @@ Singleton {
     property string totalBytesFormatted: "0 B"
     property string libraryPath: "~/Pictures"
 
+    // Favorite IDs array for instant reactivity
+    property var favoriteIds: []
+
+    function isFavorite(id) {
+        if (!id) return false;
+        return root.favoriteIds.indexOf(id) !== -1;
+    }
+
     // Selected photo info for inspector
     property var selectedItem: null
     property int selectedIndex: -1
+
+    // Rename Album Modal State
+    property bool renameModalOpen: false
+    property string renameTargetId: ""
+    property string renameInitialName: ""
+
+    function openRenameAlbumDialog(id, name) {
+        root.renameTargetId = id;
+        root.renameInitialName = name;
+        root.renameModalOpen = true;
+    }
+
+    function closeRenameAlbumDialog() {
+        root.renameModalOpen = false;
+        root.renameTargetId = "";
+        root.renameInitialName = "";
+    }
 
     onViewModeChanged: buildTimelineGroups()
 
@@ -45,14 +70,18 @@ Singleton {
         if (bytesFormatted) root.totalBytesFormatted = bytesFormatted;
         if (path) root.libraryPath = path;
 
-        // Recalculate category counts
+        // Recalculate category counts and favorite IDs
         var favs = 0;
+        var favList = [];
         var screens = 0;
         var regPhotos = 0;
         var vids = 0;
         for (var i = 0; i < root.allPhotos.length; i++) {
             var p = root.allPhotos[i];
-            if (p.is_favorite) favs++;
+            if (p.is_favorite) {
+                favs++;
+                favList.push(p.id);
+            }
             if (p.media_type === "videos") {
                 vids++;
             } else if (p.media_type === "screenshots") {
@@ -62,6 +91,7 @@ Singleton {
             }
         }
         root.favoriteCount = favs;
+        root.favoriteIds = favList;
         root.screenshotCount = screens;
         root.photoCount = regPhotos;
         root.videoCount = vids;
@@ -85,7 +115,19 @@ Singleton {
     function updateAlbums(newAlbums) {
         root.albums = newAlbums || [];
         if (root.currentSection.indexOf("album_") === 0) {
-            filterSection();
+            var exists = false;
+            for (var i = 0; i < root.albums.length; i++) {
+                if (root.albums[i].id === root.currentSection) {
+                    exists = true;
+                    root.currentSectionTitle = root.albums[i].name;
+                    break;
+                }
+            }
+            if (!exists) {
+                root.setSection("all_photos", "All Photos");
+            } else {
+                filterSection();
+            }
         }
     }
 
@@ -117,7 +159,7 @@ Singleton {
             for (var i = 0; i < root.allPhotos.length; i++) {
                 var item = root.allPhotos[i];
                 if (root.currentSection === "favorites") {
-                    if (item.is_favorite) res.push(item);
+                    if (root.isFavorite(item.id)) res.push(item);
                 } else if (root.currentSection === "screenshots") {
                     if (item.media_type === "screenshots") res.push(item);
                 } else if (root.currentSection === "photos") {

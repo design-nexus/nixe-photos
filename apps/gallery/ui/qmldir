@@ -9,3 +9,4 @@ StatusBar 1.0 StatusBar.qml
 LightboxModal 1.0 LightboxModal.qml
 SearchModal 1.0 SearchModal.qml
 NexusIcon 1.0 NexusIcon.qml
+RenameAlbumModal 1.0 RenameAlbumModal.qml

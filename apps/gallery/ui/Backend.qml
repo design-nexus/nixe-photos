@@ -55,6 +55,15 @@ Singleton {
         root.send({ c: "delete_album", album_id: albumId });
     }
 
+    function renameAlbum(albumId, newName) {
+        if (!albumId || !newName || newName.trim().length === 0) return;
+        root.send({ c: "rename_album", album_id: albumId, name: newName.trim() });
+    }
+
+    function removePhotoFromAlbum(albumId, photoId) {
+        root.send({ c: "remove_photo_from_album", album_id: albumId, photo_id: photoId });
+    }
+
     function revealInStrata(path) {
         root.send({ c: "reveal_in_strata", path: path });
     }
@@ -86,15 +95,32 @@ Singleton {
             ViewState.updateAlbums(currAlbums);
             ViewState.showToast("Album '" + msg.album.name + "' created");
         } else if (msg.t === "favorite_toggled") {
-            var photos = ViewState.allPhotos;
+            var favList = ViewState.favoriteIds.slice();
+            var fIdx = favList.indexOf(msg.id);
+            if (msg.is_favorite && fIdx === -1) {
+                favList.push(msg.id);
+            } else if (!msg.is_favorite && fIdx !== -1) {
+                favList.splice(fIdx, 1);
+            }
+            ViewState.favoriteIds = favList;
+            ViewState.favoriteCount = favList.length;
+
+            var photos = ViewState.allPhotos.slice();
             for (var i = 0; i < photos.length; i++) {
                 if (photos[i].id === msg.id) {
-                    photos[i].is_favorite = msg.is_favorite;
+                    var updated = Object.assign({}, photos[i]);
+                    updated.is_favorite = msg.is_favorite;
+                    photos[i] = updated;
+                    if (ViewState.selectedItem && ViewState.selectedItem.id === msg.id) {
+                        ViewState.selectedItem = updated;
+                    }
                     break;
                 }
             }
-            ViewState.updatePhotos(photos);
+            ViewState.allPhotos = photos;
+            ViewState.filterSection();
             root.photosUpdated();
+            ViewState.showToast(msg.is_favorite ? "Added to Favorites" : "Removed from Favorites");
         } else if (msg.t === "status") {
             ViewState.libraryPath = msg.library_path || "~/Pictures";
             ViewState.totalItems = msg.total_items || 0;

@@ -35,7 +35,9 @@ ShellRoot {
                         event.accepted = true;
                     }
                 } else if (event.key === Qt.Key_Escape) {
-                    if (ViewState.searchActive) {
+                    if (ViewState.renameModalOpen) {
+                        ViewState.closeRenameAlbumDialog();
+                    } else if (ViewState.searchActive) {
                         ViewState.searchActive = false;
                     } else if (ViewState.lightboxOpen) {
                         ViewState.closeLightbox();
@@ -128,6 +130,11 @@ ShellRoot {
 
             // Command Palette Search Modal
             SearchModal {
+                anchors.fill: parent
+            }
+
+            // Rename Album Modal Dialog
+            RenameAlbumModal {
                 anchors.fill: parent
             }
 
