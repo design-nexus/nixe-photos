@@ -1,9 +1,18 @@
+mod models;
+mod thumbnails;
+mod metadata;
+mod scanner;
+
 use std::env;
 use std::fs;
 use std::io::{self, BufRead, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use std::sync::{Arc, Mutex};
 use serde::{Deserialize, Serialize};
+
+use models::{format_bytes, PhotoItem};
+use scanner::scan_directory;
 
 #[derive(Debug, Deserialize)]
 #[serde(tag = "c", rename_all = "snake_case")]
@@ -11,6 +20,9 @@ enum Request {
     Ping,
     GetStatus,
     GetTheme,
+    ScanLibrary { path: Option<String> },
+    GetPhotos { section: Option<String> },
+    ToggleFavorite { id: String },
     RevealInStrata { path: String },
     Quit,
 }
@@ -23,6 +35,23 @@ enum Response {
         library_path: String,
         theme_name: String,
         total_items: usize,
+        total_bytes: u64,
+        total_bytes_formatted: String,
+    },
+    LibraryScanned {
+        library_path: String,
+        total_items: usize,
+        total_bytes: u64,
+        total_bytes_formatted: String,
+        photos: Vec<PhotoItem>,
+    },
+    Photos {
+        section: String,
+        photos: Vec<PhotoItem>,
+    },
+    FavoriteToggled {
+        id: String,
+        is_favorite: bool,
     },
     Theme {
         name: String,
@@ -73,17 +102,10 @@ fn get_omarchy_colors() -> (String, serde_json::Value) {
             return (name, parsed);
         }
     }
-    // Fallback Catppuccin Mocha colors
     let mut fallback = serde_json::Map::new();
     fallback.insert("background".into(), "#1e1e2e".into());
     fallback.insert("surface".into(), "#242438".into());
-    fallback.insert("dark_background".into(), "#161622".into());
-    fallback.insert("lighter_background".into(), "#313244".into());
-    fallback.insert("foreground".into(), "#cdd6f4".into());
     fallback.insert("accent".into(), "#89b4fa".into());
-    fallback.insert("selection".into(), "#45475a".into());
-    fallback.insert("muted".into(), "#585b70".into());
-    fallback.insert("dark_foreground".into(), "#6c7086".into());
     (name, serde_json::Value::Object(fallback))
 }
 
@@ -95,14 +117,12 @@ fn reveal_in_strata(target: &str) -> (bool, String) {
         path.parent().and_then(|p| p.to_str()).unwrap_or(target)
     };
 
-    // First try strata binary directly
     if Command::new("strata").arg(dir).spawn().is_ok() {
         return (true, format!("Opened {} in Strata", dir));
     }
 
-    // Fallback to xdg-open
     match Command::new("xdg-open").arg(dir).spawn() {
-        Ok(_) => (true, format!("Opened {} with system handler", dir)),
+        Ok(_) => (true, format!("Opened {} with default handler", dir)),
         Err(e) => (false, format!("Failed to open {}: {}", dir, e)),
     }
 }
@@ -112,17 +132,33 @@ fn run_backend() -> io::Result<()> {
     let stdout = io::stdout();
     let mut out = stdout.lock();
 
-    // Send initial status immediately upon starting
-    let pictures_dir = dirs::picture_dir()
-        .map(|p| p.to_string_lossy().to_string())
-        .unwrap_or_else(|| "~/Pictures".to_string());
-    
-    let initial_status = Response::Status {
-        library_path: pictures_dir.clone(),
-        theme_name: get_omarchy_theme_name(),
-        total_items: 0,
+    let pictures_dir = dirs::picture_dir().unwrap_or_else(|| {
+        dirs::home_dir()
+            .map(|h| h.join("Pictures"))
+            .unwrap_or_else(|| PathBuf::from("."))
+    });
+
+    let photos_store: Arc<Mutex<Vec<PhotoItem>>> = Arc::new(Mutex::new(Vec::new()));
+
+    // Initial scan on startup
+    let initial_photos = scan_directory(&pictures_dir);
+    let total_bytes: u64 = initial_photos.iter().map(|p| p.file_size).sum();
+    let total_items = initial_photos.len();
+
+    {
+        let mut store = photos_store.lock().unwrap();
+        *store = initial_photos.clone();
+    }
+
+    // Send initial status and photos
+    let initial_msg = Response::LibraryScanned {
+        library_path: pictures_dir.to_string_lossy().to_string(),
+        total_items,
+        total_bytes,
+        total_bytes_formatted: format_bytes(total_bytes),
+        photos: initial_photos,
     };
-    if let Ok(line) = serde_json::to_string(&initial_status) {
+    if let Ok(line) = serde_json::to_string(&initial_msg) {
         let _ = writeln!(out, "{}", line);
         let _ = out.flush();
     }
@@ -144,11 +180,70 @@ fn run_backend() -> io::Result<()> {
                 version: env!("CARGO_PKG_VERSION"),
             },
             Ok(Request::GetStatus) => {
-                let theme_name = get_omarchy_theme_name();
+                let store = photos_store.lock().unwrap();
+                let bytes: u64 = store.iter().map(|p| p.file_size).sum();
                 Response::Status {
-                    library_path: pictures_dir.clone(),
-                    theme_name,
-                    total_items: 0,
+                    library_path: pictures_dir.to_string_lossy().to_string(),
+                    theme_name: get_omarchy_theme_name(),
+                    total_items: store.len(),
+                    total_bytes: bytes,
+                    total_bytes_formatted: format_bytes(bytes),
+                }
+            }
+            Ok(Request::ScanLibrary { path }) => {
+                let target_dir = path
+                    .map(PathBuf::from)
+                    .unwrap_or_else(|| pictures_dir.clone());
+                let scanned = scan_directory(&target_dir);
+                let bytes: u64 = scanned.iter().map(|p| p.file_size).sum();
+                let count = scanned.len();
+                {
+                    let mut store = photos_store.lock().unwrap();
+                    *store = scanned.clone();
+                }
+                Response::LibraryScanned {
+                    library_path: target_dir.to_string_lossy().to_string(),
+                    total_items: count,
+                    total_bytes: bytes,
+                    total_bytes_formatted: format_bytes(bytes),
+                    photos: scanned,
+                }
+            }
+            Ok(Request::GetPhotos { section }) => {
+                let sec = section.unwrap_or_else(|| "all_photos".to_string());
+                let store = photos_store.lock().unwrap();
+                let filtered: Vec<PhotoItem> = match sec.as_str() {
+                    "favorites" => store.iter().filter(|p| p.is_favorite).cloned().collect(),
+                    "screenshots" => store
+                        .iter()
+                        .filter(|p| p.media_type == "screenshots")
+                        .cloned()
+                        .collect(),
+                    "photos" => store
+                        .iter()
+                        .filter(|p| p.media_type == "photos")
+                        .cloned()
+                        .collect(),
+                    _ => store.clone(),
+                };
+                Response::Photos {
+                    section: sec,
+                    photos: filtered,
+                }
+            }
+            Ok(Request::ToggleFavorite { id }) => {
+                let mut store = photos_store.lock().unwrap();
+                let mut found_state = false;
+                for p in store.iter_mut() {
+                    if p.id == id {
+                        p.is_favorite = !p.is_favorite;
+                        found_state = p.is_favorite;
+                        break;
+                    }
+                }
+                Response::FavoriteToggled {
+                    id,
+                    is_favorite: found_state,
                 }
             }
             Ok(Request::GetTheme) => {
@@ -186,13 +281,11 @@ fn locate_ui_dir() -> PathBuf {
         }
     }
 
-    // Check relative to current working directory
     let cwd_ui = PathBuf::from("ui");
     if cwd_ui.exists() {
         return cwd_ui;
     }
 
-    // Check relative to executable
     if let Ok(mut exe) = env::current_exe() {
         exe.pop();
         let relative = exe.join("ui");

@@ -22,7 +22,7 @@ Rectangle {
 
         // Left: Item counts & storage info
         Text {
-            text: "8 Photos in preview • " + ViewState.libraryPath
+            text: ViewState.totalItems + " Photos • " + ViewState.totalBytesFormatted + " • " + ViewState.libraryPath
             font.family: Theme.font.family
             font.pixelSize: Theme.font.caption
             color: Theme.color.dimText

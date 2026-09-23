@@ -13,6 +13,7 @@ Singleton {
 
     signal statusReceived(string libraryPath, string themeName, int totalItems)
     signal revealResult(bool ok, string message)
+    signal photosUpdated()
 
     function send(obj) {
         var line = JSON.stringify(obj) + "\n";
@@ -33,6 +34,14 @@ Singleton {
         root.send({ c: "get_status" });
     }
 
+    function scanLibrary(path) {
+        root.send({ c: "scan_library", path: path || null });
+    }
+
+    function toggleFavorite(id) {
+        root.send({ c: "toggle_favorite", id: id });
+    }
+
     function revealInStrata(path) {
         root.send({ c: "reveal_in_strata", path: path });
     }
@@ -47,9 +56,26 @@ Singleton {
             return;
         }
 
-        if (msg.t === "status") {
+        if (msg.t === "library_scanned") {
+            ViewState.updatePhotos(msg.photos, msg.total_items, msg.total_bytes_formatted, msg.library_path);
+            root.photosUpdated();
+        } else if (msg.t === "photos") {
+            ViewState.updatePhotos(msg.photos, msg.photos.length);
+            root.photosUpdated();
+        } else if (msg.t === "favorite_toggled") {
+            var photos = ViewState.allPhotos;
+            for (var i = 0; i < photos.length; i++) {
+                if (photos[i].id === msg.id) {
+                    photos[i].is_favorite = msg.is_favorite;
+                    break;
+                }
+            }
+            ViewState.updatePhotos(photos);
+            root.photosUpdated();
+        } else if (msg.t === "status") {
             ViewState.libraryPath = msg.library_path || "~/Pictures";
             ViewState.totalItems = msg.total_items || 0;
+            if (msg.total_bytes_formatted) ViewState.totalBytesFormatted = msg.total_bytes_formatted;
             root.statusReceived(msg.library_path, msg.theme_name, msg.total_items);
         } else if (msg.t === "reveal_result") {
             root.revealResult(msg.ok, msg.message);

@@ -88,7 +88,12 @@ Rectangle {
                             }
 
                             Rectangle {
-                                visible: modelData.id === "all_photos" && ViewState.totalItems > 0
+                                property int sectionCount: {
+                                    if (modelData.id === "all_photos") return ViewState.totalItems;
+                                    if (modelData.id === "favorites") return ViewState.favoriteCount;
+                                    return 0;
+                                }
+                                visible: sectionCount > 0
                                 width: countText.implicitWidth + 8
                                 height: 16
                                 radius: 8
@@ -97,7 +102,7 @@ Rectangle {
                                 Text {
                                     id: countText
                                     anchors.centerIn: parent
-                                    text: ViewState.totalItems
+                                    text: parent.sectionCount
                                     font.pixelSize: 9
                                     color: Theme.color.dimText
                                 }
@@ -160,6 +165,27 @@ Rectangle {
                                 font.bold: mediaRow.active
                                 color: Theme.color.foreground
                                 Layout.fillWidth: true
+                            }
+
+                            Rectangle {
+                                property int sectionCount: {
+                                    if (modelData.id === "screenshots") return ViewState.screenshotCount;
+                                    if (modelData.id === "photos") return ViewState.photoCount;
+                                    return 0;
+                                }
+                                visible: sectionCount > 0
+                                width: mediaCountText.implicitWidth + 8
+                                height: 16
+                                radius: 8
+                                color: Theme.color.muted
+
+                                Text {
+                                    id: mediaCountText
+                                    anchors.centerIn: parent
+                                    text: parent.sectionCount
+                                    font.pixelSize: 9
+                                    color: Theme.color.dimText
+                                }
                             }
                         }
 
