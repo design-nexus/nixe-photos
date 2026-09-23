@@ -53,7 +53,6 @@ Rectangle {
                 Repeater {
                     model: [
                         { id: "all_photos", title: "All Photos", icon: "image" },
-                        { id: "timeline", title: "Timeline", icon: "calendar" },
                         { id: "favorites", title: "Favorites", icon: "star" },
                         { id: "recent", title: "Recently Added", icon: "clock" },
                         { id: "trash", title: "Trash", icon: "trash" }
