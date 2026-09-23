@@ -118,4 +118,11 @@ Launch Nexus Photos from your terminal:
 ```bash
 nexus-photos
 ```
+> Nexus Photos automatically detaches from the controlling terminal into the background, immediately returning your command prompt.
+> 
+> To run in the foreground attached to the terminal (e.g. for debugging or live logs), pass `-f` or `--foreground`:
+> ```bash
+> nexus-photos -f
+> ```
+
 Or launch **Nexus Photos** directly from your desktop application launcher (e.g. Walker, Rofi, Fuzzel).

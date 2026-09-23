@@ -471,7 +471,7 @@ fn locate_ui_dir() -> PathBuf {
     PathBuf::from("ui")
 }
 
-fn launch_gui() -> io::Result<()> {
+fn launch_gui(foreground: bool) -> io::Result<()> {
     let ui_dir = locate_ui_dir();
     let shell_path = ui_dir.join("shell.qml");
 
@@ -487,17 +487,42 @@ fn launch_gui() -> io::Result<()> {
         .unwrap_or_else(|_| PathBuf::from("nexus-photos"));
 
     let mut cmd = Command::new("quickshell");
+    if !foreground {
+        cmd.arg("-d");
+    }
     cmd.arg("-p")
         .arg(&shell_path)
         .env("NEXUS_BIN", &current_exe)
-        .env("NEXUS_UI", &ui_dir)
-        .stdin(Stdio::inherit())
-        .stdout(Stdio::inherit())
-        .stderr(Stdio::inherit());
+        .env("NEXUS_UI", &ui_dir);
 
-    let status = cmd.status()?;
-    if !status.success() {
-        std::process::exit(status.code().unwrap_or(1));
+    if foreground {
+        cmd.stdin(Stdio::inherit())
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit());
+
+        let status = cmd.status()?;
+        if !status.success() {
+            std::process::exit(status.code().unwrap_or(1));
+        }
+    } else {
+        #[cfg(unix)]
+        {
+            use std::os::unix::process::CommandExt;
+            cmd.process_group(0);
+        }
+        cmd.stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null());
+
+        match cmd.spawn() {
+            Ok(_) => {
+                std::process::exit(0);
+            }
+            Err(e) => {
+                eprintln!("nexus-photos: failed to launch GUI: {}", e);
+                std::process::exit(1);
+            }
+        }
     }
 
     Ok(())
@@ -514,14 +539,16 @@ fn main() -> io::Result<()> {
         println!("Usage: nexus-photos [OPTIONS]");
         println!();
         println!("Options:");
-        println!("  --backend     Run in backend IPC daemon mode");
-        println!("  -h, --help    Show this help message");
-        println!("  -V, --version Print version");
+        println!("  -f, --foreground  Run in foreground attached to terminal");
+        println!("  --backend         Run in backend IPC daemon mode");
+        println!("  -h, --help        Show this help message");
+        println!("  -V, --version     Print version");
         Ok(())
     } else if args.len() > 1 && (args[1] == "--version" || args[1] == "-V") {
         println!("nexus-photos {}", env!("CARGO_PKG_VERSION"));
         Ok(())
     } else {
-        launch_gui()
+        let foreground = args.iter().any(|arg| arg == "--foreground" || arg == "-f");
+        launch_gui(foreground)
     }
 }
