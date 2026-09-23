@@ -42,6 +42,19 @@ Singleton {
         root.send({ c: "toggle_favorite", id: id });
     }
 
+    function createAlbum(name) {
+        if (!name || name.trim().length === 0) return;
+        root.send({ c: "create_album", name: name.trim() });
+    }
+
+    function addPhotosToAlbum(albumId, photoIds) {
+        root.send({ c: "add_photos_to_album", album_id: albumId, photo_ids: photoIds });
+    }
+
+    function deleteAlbum(albumId) {
+        root.send({ c: "delete_album", album_id: albumId });
+    }
+
     function revealInStrata(path) {
         root.send({ c: "reveal_in_strata", path: path });
     }
@@ -58,10 +71,20 @@ Singleton {
 
         if (msg.t === "library_scanned") {
             ViewState.updatePhotos(msg.photos, msg.total_items, msg.total_bytes_formatted, msg.library_path);
+            if (msg.albums) {
+                ViewState.updateAlbums(msg.albums);
+            }
             root.photosUpdated();
         } else if (msg.t === "photos") {
             ViewState.updatePhotos(msg.photos, msg.photos.length);
             root.photosUpdated();
+        } else if (msg.t === "albums") {
+            ViewState.updateAlbums(msg.albums);
+        } else if (msg.t === "album_created") {
+            var currAlbums = ViewState.albums.slice();
+            currAlbums.push(msg.album);
+            ViewState.updateAlbums(currAlbums);
+            ViewState.showToast("Album '" + msg.album.name + "' created");
         } else if (msg.t === "favorite_toggled") {
             var photos = ViewState.allPhotos;
             for (var i = 0; i < photos.length; i++) {

@@ -11,7 +11,7 @@ use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
 use serde::{Deserialize, Serialize};
 
-use models::{format_bytes, PhotoItem};
+use models::{format_bytes, Album, PhotoItem};
 use scanner::scan_directory;
 
 #[derive(Debug, Deserialize)]
@@ -23,6 +23,11 @@ enum Request {
     ScanLibrary { path: Option<String> },
     GetPhotos { section: Option<String> },
     ToggleFavorite { id: String },
+    CreateAlbum { name: String },
+    AddPhotosToAlbum { album_id: String, photo_ids: Vec<String> },
+    RemovePhotoFromAlbum { album_id: String, photo_id: String },
+    DeleteAlbum { album_id: String },
+    GetAlbums,
     RevealInStrata { path: String },
     Quit,
 }
@@ -44,10 +49,17 @@ enum Response {
         total_bytes: u64,
         total_bytes_formatted: String,
         photos: Vec<PhotoItem>,
+        albums: Vec<Album>,
     },
     Photos {
         section: String,
         photos: Vec<PhotoItem>,
+    },
+    Albums {
+        albums: Vec<Album>,
+    },
+    AlbumCreated {
+        album: Album,
     },
     FavoriteToggled {
         id: String,
@@ -109,6 +121,37 @@ fn get_omarchy_colors() -> (String, serde_json::Value) {
     (name, serde_json::Value::Object(fallback))
 }
 
+fn get_albums_file() -> PathBuf {
+    let dir = dirs::data_local_dir()
+        .map(|d| d.join("nexus-photos"))
+        .unwrap_or_else(|| PathBuf::from("."));
+    let _ = fs::create_dir_all(&dir);
+    dir.join("albums.json")
+}
+
+fn load_albums() -> Vec<Album> {
+    let path = get_albums_file();
+    if let Ok(content) = fs::read_to_string(&path) {
+        if let Ok(albums) = serde_json::from_str(&content) {
+            return albums;
+        }
+    }
+    // Default initial album if none exist
+    vec![Album {
+        id: "highlight_album".to_string(),
+        name: "Favorites & Highlights".to_string(),
+        photo_ids: Vec::new(),
+        created_at: "2026-09-22".to_string(),
+    }]
+}
+
+fn save_albums(albums: &[Album]) {
+    let path = get_albums_file();
+    if let Ok(json) = serde_json::to_string_pretty(albums) {
+        let _ = fs::write(path, json);
+    }
+}
+
 fn reveal_in_strata(target: &str) -> (bool, String) {
     let path = Path::new(target);
     let dir = if path.is_dir() {
@@ -139,6 +182,7 @@ fn run_backend() -> io::Result<()> {
     });
 
     let photos_store: Arc<Mutex<Vec<PhotoItem>>> = Arc::new(Mutex::new(Vec::new()));
+    let albums_store: Arc<Mutex<Vec<Album>>> = Arc::new(Mutex::new(load_albums()));
 
     // Initial scan on startup
     let initial_photos = scan_directory(&pictures_dir);
@@ -150,13 +194,19 @@ fn run_backend() -> io::Result<()> {
         *store = initial_photos.clone();
     }
 
-    // Send initial status and photos
+    let initial_albums = {
+        let a = albums_store.lock().unwrap();
+        a.clone()
+    };
+
+    // Send initial status, photos, and albums
     let initial_msg = Response::LibraryScanned {
         library_path: pictures_dir.to_string_lossy().to_string(),
         total_items,
         total_bytes,
         total_bytes_formatted: format_bytes(total_bytes),
         photos: initial_photos,
+        albums: initial_albums,
     };
     if let Ok(line) = serde_json::to_string(&initial_msg) {
         let _ = writeln!(out, "{}", line);
@@ -201,12 +251,17 @@ fn run_backend() -> io::Result<()> {
                     let mut store = photos_store.lock().unwrap();
                     *store = scanned.clone();
                 }
+                let albums = {
+                    let a = albums_store.lock().unwrap();
+                    a.clone()
+                };
                 Response::LibraryScanned {
                     library_path: target_dir.to_string_lossy().to_string(),
                     total_items: count,
                     total_bytes: bytes,
                     total_bytes_formatted: format_bytes(bytes),
                     photos: scanned,
+                    albums,
                 }
             }
             Ok(Request::GetPhotos { section }) => {
@@ -246,6 +301,55 @@ fn run_backend() -> io::Result<()> {
                     is_favorite: found_state,
                 }
             }
+            Ok(Request::CreateAlbum { name }) => {
+                let mut albums = albums_store.lock().unwrap();
+                let new_id = format!("album_{}", albums.len() + 1);
+                let album = Album {
+                    id: new_id,
+                    name,
+                    photo_ids: Vec::new(),
+                    created_at: "2026-09-22".to_string(),
+                };
+                albums.push(album.clone());
+                save_albums(&albums);
+                Response::AlbumCreated { album }
+            }
+            Ok(Request::AddPhotosToAlbum { album_id, photo_ids }) => {
+                let mut albums = albums_store.lock().unwrap();
+                for a in albums.iter_mut() {
+                    if a.id == album_id {
+                        for pid in &photo_ids {
+                            if !a.photo_ids.contains(pid) {
+                                a.photo_ids.push(pid.clone());
+                            }
+                        }
+                        break;
+                    }
+                }
+                save_albums(&albums);
+                Response::Albums { albums: albums.clone() }
+            }
+            Ok(Request::RemovePhotoFromAlbum { album_id, photo_id }) => {
+                let mut albums = albums_store.lock().unwrap();
+                for a in albums.iter_mut() {
+                    if a.id == album_id {
+                        a.photo_ids.retain(|id| id != &photo_id);
+                        break;
+                    }
+                }
+                save_albums(&albums);
+                Response::Albums { albums: albums.clone() }
+            }
+            Ok(Request::DeleteAlbum { album_id }) => {
+                let mut albums = albums_store.lock().unwrap();
+                albums.retain(|a| a.id != album_id);
+                save_albums(&albums);
+                Response::Albums { albums: albums.clone() }
+            }
+            Ok(Request::GetAlbums) => {
+                let albums = albums_store.lock().unwrap();
+                Response::Albums { albums: albums.clone() }
+            }
             Ok(Request::GetTheme) => {
                 let (name, colors) = get_omarchy_colors();
                 Response::Theme { name, colors }
@@ -284,6 +388,13 @@ fn locate_ui_dir() -> PathBuf {
     let cwd_ui = PathBuf::from("ui");
     if cwd_ui.exists() {
         return cwd_ui;
+    }
+
+    if let Some(data_dir) = dirs::data_local_dir() {
+        let user_share = data_dir.join("nexus-photos").join("ui");
+        if user_share.exists() {
+            return user_share;
+        }
     }
 
     if let Ok(mut exe) = env::current_exe() {

@@ -468,6 +468,59 @@ Rectangle {
                     }
                 }
 
+                // Add to Album Section
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 4
+                    visible: ViewState.selectedItem !== null && ViewState.albums.length > 0
+
+                    Text {
+                        text: "ADD TO ALBUM"
+                        font.family: Theme.font.family
+                        font.pixelSize: Theme.font.caption
+                        font.bold: true
+                        color: Theme.color.dimText
+                    }
+
+                    Flow {
+                        Layout.fillWidth: true
+                        spacing: 6
+
+                        Repeater {
+                            model: ViewState.albums
+
+                            Rectangle {
+                                height: 24
+                                width: albTagText.implicitWidth + 20
+                                radius: 12
+                                color: albTagHover.hovered ? Theme.color.selection : Theme.color.surfaceElevated
+                                border.color: Theme.color.border
+                                border.width: 1
+
+                                RowLayout {
+                                    anchors.centerIn: parent
+                                    spacing: 4
+                                    Text { text: "+"; font.pixelSize: 11; color: Theme.color.accent; font.bold: true }
+                                    Text {
+                                        id: albTagText
+                                        text: modelData.name
+                                        font.family: Theme.font.family
+                                        font.pixelSize: Theme.font.caption
+                                        color: Theme.color.foreground
+                                    }
+                                }
+
+                                HoverHandler { id: albTagHover }
+                                TapHandler {
+                                    onTapped: {
+                                        ViewState.addSelectionToAlbum(modelData.id);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
                 // Favorite Button
                 Rectangle {
                     Layout.fillWidth: true

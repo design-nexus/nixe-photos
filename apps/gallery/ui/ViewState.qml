@@ -71,18 +71,52 @@ Singleton {
         filterSection();
     }
 
+    // Albums state
+    property var albums: []
+
+    function updateAlbums(newAlbums) {
+        root.albums = newAlbums || [];
+        if (root.currentSection.indexOf("album_") === 0) {
+            filterSection();
+        }
+    }
+
+    function addSelectionToAlbum(albumId) {
+        var ids = root.selectedIds.length > 0 ? root.selectedIds : (root.selectedItem ? [root.selectedItem.id] : []);
+        if (ids.length === 0) return;
+        Backend.addPhotosToAlbum(albumId, ids);
+        showToast("Added " + ids.length + " photo" + (ids.length === 1 ? "" : "s") + " to album");
+    }
+
     function filterSection() {
         var res = [];
-        for (var i = 0; i < root.allPhotos.length; i++) {
-            var item = root.allPhotos[i];
-            if (root.currentSection === "favorites") {
-                if (item.is_favorite) res.push(item);
-            } else if (root.currentSection === "screenshots") {
-                if (item.media_type === "screenshots") res.push(item);
-            } else if (root.currentSection === "photos") {
-                if (item.media_type === "photos") res.push(item);
-            } else {
-                res.push(item);
+        if (root.currentSection.indexOf("album_") === 0) {
+            var targetAlbum = null;
+            for (var a = 0; a < root.albums.length; a++) {
+                if (root.albums[a].id === root.currentSection) {
+                    targetAlbum = root.albums[a];
+                    break;
+                }
+            }
+            if (targetAlbum && targetAlbum.photo_ids) {
+                for (var i = 0; i < root.allPhotos.length; i++) {
+                    if (targetAlbum.photo_ids.indexOf(root.allPhotos[i].id) !== -1) {
+                        res.push(root.allPhotos[i]);
+                    }
+                }
+            }
+        } else {
+            for (var i = 0; i < root.allPhotos.length; i++) {
+                var item = root.allPhotos[i];
+                if (root.currentSection === "favorites") {
+                    if (item.is_favorite) res.push(item);
+                } else if (root.currentSection === "screenshots") {
+                    if (item.media_type === "screenshots") res.push(item);
+                } else if (root.currentSection === "photos") {
+                    if (item.media_type === "photos") res.push(item);
+                } else {
+                    res.push(item);
+                }
             }
         }
         root.displayedPhotos = res;

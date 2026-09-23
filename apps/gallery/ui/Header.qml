@@ -163,6 +163,7 @@ Rectangle {
                 }
 
                 HoverHandler { id: searchHover }
+                TapHandler { onTapped: ViewState.searchActive = true }
             }
 
             // Thumbnail Zoom control

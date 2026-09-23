@@ -35,7 +35,9 @@ ShellRoot {
                         event.accepted = true;
                     }
                 } else if (event.key === Qt.Key_Escape) {
-                    if (ViewState.lightboxOpen) {
+                    if (ViewState.searchActive) {
+                        ViewState.searchActive = false;
+                    } else if (ViewState.lightboxOpen) {
                         ViewState.closeLightbox();
                     } else {
                         ViewState.clearSelection();
@@ -121,6 +123,11 @@ ShellRoot {
 
             // Fullscreen Lightbox Modal Overlay
             LightboxModal {
+                anchors.fill: parent
+            }
+
+            // Command Palette Search Modal
+            SearchModal {
                 anchors.fill: parent
             }
 
