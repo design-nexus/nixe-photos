@@ -229,8 +229,16 @@ Rectangle {
 
             // Camera & Optics (EXIF)
             ColumnLayout {
+                id: cameraSection
                 Layout.fillWidth: true
                 spacing: 8
+                visible: ViewState.selectedItem !== null && (
+                    (ViewState.selectedItem.camera_model && ViewState.selectedItem.camera_model.length > 0) ||
+                    (ViewState.selectedItem.focal_length && ViewState.selectedItem.focal_length.length > 0) ||
+                    (ViewState.selectedItem.aperture && ViewState.selectedItem.aperture.length > 0) ||
+                    (ViewState.selectedItem.shutter_speed && ViewState.selectedItem.shutter_speed.length > 0) ||
+                    (ViewState.selectedItem.iso && ViewState.selectedItem.iso.length > 0)
+                )
 
                 Text {
                     text: "CAMERA & OPTICS"
@@ -255,11 +263,11 @@ Rectangle {
                         spacing: 6
 
                         RowLayout {
+                            visible: ViewState.selectedItem && ViewState.selectedItem.camera_model
                             Layout.fillWidth: true
                             Text { text: "Device"; font.pixelSize: Theme.font.bodySmall; color: Theme.color.dimText }
                             Text {
-                                text: (ViewState.selectedItem && ViewState.selectedItem.camera_model) ?
-                                      ViewState.selectedItem.camera_model : "Digital Screenshot / Screen Capture"
+                                text: ViewState.selectedItem && ViewState.selectedItem.camera_model ? ViewState.selectedItem.camera_model : ""
                                 font.pixelSize: Theme.font.bodySmall
                                 font.bold: true
                                 color: Theme.color.foreground
@@ -270,7 +278,7 @@ Rectangle {
                         }
 
                         RowLayout {
-                            visible: ViewState.selectedItem && ViewState.selectedItem.lens_model !== null
+                            visible: ViewState.selectedItem && ViewState.selectedItem.lens_model
                             Layout.fillWidth: true
                             Text { text: "Lens"; font.pixelSize: Theme.font.bodySmall; color: Theme.color.dimText }
                             Text {
@@ -289,7 +297,7 @@ Rectangle {
                             spacing: 4
 
                             Rectangle {
-                                visible: ViewState.selectedItem && ViewState.selectedItem.focal_length !== null
+                                visible: ViewState.selectedItem && ViewState.selectedItem.focal_length
                                 height: 20
                                 width: exp1.implicitWidth + 8
                                 radius: 4
@@ -297,7 +305,7 @@ Rectangle {
                                 Text { id: exp1; anchors.centerIn: parent; text: ViewState.selectedItem && ViewState.selectedItem.focal_length ? ViewState.selectedItem.focal_length : ""; font.pixelSize: 9; color: Theme.color.dimText }
                             }
                             Rectangle {
-                                visible: ViewState.selectedItem && ViewState.selectedItem.aperture !== null
+                                visible: ViewState.selectedItem && ViewState.selectedItem.aperture
                                 height: 20
                                 width: exp2.implicitWidth + 8
                                 radius: 4
@@ -305,7 +313,7 @@ Rectangle {
                                 Text { id: exp2; anchors.centerIn: parent; text: ViewState.selectedItem && ViewState.selectedItem.aperture ? ViewState.selectedItem.aperture : ""; font.pixelSize: 9; color: Theme.color.dimText }
                             }
                             Rectangle {
-                                visible: ViewState.selectedItem && ViewState.selectedItem.shutter_speed !== null
+                                visible: ViewState.selectedItem && ViewState.selectedItem.shutter_speed
                                 height: 20
                                 width: exp3.implicitWidth + 8
                                 radius: 4
@@ -313,19 +321,12 @@ Rectangle {
                                 Text { id: exp3; anchors.centerIn: parent; text: ViewState.selectedItem && ViewState.selectedItem.shutter_speed ? ViewState.selectedItem.shutter_speed : ""; font.pixelSize: 9; color: Theme.color.dimText }
                             }
                             Rectangle {
-                                visible: ViewState.selectedItem && ViewState.selectedItem.iso !== null
+                                visible: ViewState.selectedItem && ViewState.selectedItem.iso
                                 height: 20
                                 width: exp4.implicitWidth + 8
                                 radius: 4
                                 color: Theme.color.surfaceElevated
                                 Text { id: exp4; anchors.centerIn: parent; text: ViewState.selectedItem && ViewState.selectedItem.iso ? ViewState.selectedItem.iso : ""; font.pixelSize: 9; color: Theme.color.dimText }
-                            }
-
-                            Text {
-                                visible: !ViewState.selectedItem || (!ViewState.selectedItem.focal_length && !ViewState.selectedItem.aperture && !ViewState.selectedItem.shutter_speed)
-                                text: "No optical exposure metadata"
-                                font.pixelSize: Theme.font.caption
-                                color: Theme.color.dimText
                             }
                         }
                     }
