@@ -15,6 +15,30 @@ Singleton {
     signal revealResult(bool ok, string message)
     signal photosUpdated()
 
+    // A file passed on the command line (nexus-photos FILE), opened once the
+    // library has loaded. If it isn't in the library, its own folder is shown.
+    property string openPath: Quickshell.env("NEXUS_OPEN") || ""
+    property bool openHandled: openPath === ""
+
+    function handleOpenRequest(scannedPath) {
+        if (root.openHandled) return;
+        var list = ViewState.displayedPhotos;
+        for (var i = 0; i < list.length; i++) {
+            if (list[i].path === root.openPath) {
+                root.openHandled = true;
+                ViewState.openLightbox(list[i], i);
+                return;
+            }
+        }
+        var dir = root.openPath.substring(0, root.openPath.lastIndexOf("/")) || "/";
+        if (scannedPath === dir) {
+            root.openHandled = true;
+            ViewState.showToast("Couldn't open " + root.openPath);
+            return;
+        }
+        root.scanLibrary(dir, 1);
+    }
+
     function send(obj) {
         var line = JSON.stringify(obj) + "\n";
         if (root.queueing) {
@@ -34,8 +58,8 @@ Singleton {
         root.send({ c: "get_status" });
     }
 
-    function scanLibrary(path) {
-        root.send({ c: "scan_library", path: path || null });
+    function scanLibrary(path, depth) {
+        root.send({ c: "scan_library", path: path || null, depth: depth || null });
     }
 
     function toggleFavorite(id) {
@@ -84,6 +108,7 @@ Singleton {
                 ViewState.updateAlbums(msg.albums);
             }
             root.photosUpdated();
+            root.handleOpenRequest(msg.library_path);
         } else if (msg.t === "photos") {
             ViewState.updatePhotos(msg.photos, msg.photos.length);
             root.photosUpdated();

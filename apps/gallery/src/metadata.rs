@@ -31,8 +31,10 @@ pub fn extract_photo_item(path: &Path) -> Option<PhotoItem> {
     let (mut width, mut height) = image::image_dimensions(path).unwrap_or((0, 0));
 
     // For videos, try ffprobe for width and height
-    if width == 0 && height == 0 && crate::scanner::VIDEO_EXTENSIONS.contains(&ext_lower.as_str()) {
-        if let Ok(output) = std::process::Command::new("ffprobe")
+    if width == 0
+        && height == 0
+        && crate::scanner::VIDEO_EXTENSIONS.contains(&ext_lower.as_str())
+        && let Ok(output) = std::process::Command::new("ffprobe")
             .arg("-v")
             .arg("error")
             .arg("-select_streams")
@@ -43,13 +45,12 @@ pub fn extract_photo_item(path: &Path) -> Option<PhotoItem> {
             .arg("csv=s=x:p=0")
             .arg(path)
             .output()
-        {
-            let s = String::from_utf8_lossy(&output.stdout).trim().to_string();
-            let parts: Vec<&str> = s.split('x').collect();
-            if parts.len() == 2 {
-                width = parts[0].parse().unwrap_or(0);
-                height = parts[1].parse().unwrap_or(0);
-            }
+    {
+        let s = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        let parts: Vec<&str> = s.split('x').collect();
+        if parts.len() == 2 {
+            width = parts[0].parse().unwrap_or(0);
+            height = parts[1].parse().unwrap_or(0);
         }
     }
 

@@ -2,11 +2,12 @@
 Name=Nexus Photos
 GenericName=Photo Gallery & Organizer
 Comment=Fast, keyboard-first desktop photo gallery modeled after Strata and macOS Photos
-Exec=nexus-photos
+Exec=nexus-photos %F
 Icon=io.github.nexus.photos
 Terminal=false
 Type=Application
 Categories=Graphics;Photography;Viewer;
 Keywords=photos;gallery;viewer;pictures;omarchy;strata;exif;albums;
+MimeType=image/jpeg;image/png;image/webp;image/tiff;image/bmp;image/gif;image/avif;
 StartupWMClass=nexus-photos
 StartupNotify=true

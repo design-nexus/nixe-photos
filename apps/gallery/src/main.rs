@@ -12,7 +12,7 @@ use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
 
 use models::{Album, PhotoItem, format_bytes};
-use scanner::scan_directory;
+use scanner::{scan_directory, scan_directory_depth};
 
 #[derive(Debug, Deserialize)]
 #[serde(tag = "c", rename_all = "snake_case")]
@@ -22,6 +22,8 @@ enum Request {
     GetTheme,
     ScanLibrary {
         path: Option<String>,
+        #[serde(default)]
+        depth: Option<usize>,
     },
     GetPhotos {
         section: Option<String>,
@@ -155,10 +157,10 @@ fn get_albums_file() -> PathBuf {
 
 fn load_albums() -> Vec<Album> {
     let path = get_albums_file();
-    if let Ok(content) = fs::read_to_string(&path) {
-        if let Ok(albums) = serde_json::from_str(&content) {
-            return albums;
-        }
+    if let Ok(content) = fs::read_to_string(&path)
+        && let Ok(albums) = serde_json::from_str(&content)
+    {
+        return albums;
     }
     // Default initial album if none exist
     vec![Album {
@@ -179,10 +181,10 @@ fn get_favorites_file() -> PathBuf {
 
 fn load_favorites() -> Vec<String> {
     let path = get_favorites_file();
-    if let Ok(content) = fs::read_to_string(&path) {
-        if let Ok(favs) = serde_json::from_str(&content) {
-            return favs;
-        }
+    if let Ok(content) = fs::read_to_string(&path)
+        && let Ok(favs) = serde_json::from_str(&content)
+    {
+        return favs;
     }
     Vec::new()
 }
@@ -295,11 +297,11 @@ fn run_backend() -> io::Result<()> {
                     total_bytes_formatted: format_bytes(bytes),
                 }
             }
-            Ok(Request::ScanLibrary { path }) => {
+            Ok(Request::ScanLibrary { path, depth }) => {
                 let target_dir = path
                     .map(PathBuf::from)
                     .unwrap_or_else(|| pictures_dir.clone());
-                let mut scanned = scan_directory(&target_dir);
+                let mut scanned = scan_directory_depth(&target_dir, depth.unwrap_or(8));
                 let favs = load_favorites();
                 for p in scanned.iter_mut() {
                     if favs.contains(&p.id) {
@@ -511,7 +513,7 @@ fn locate_ui_dir() -> PathBuf {
     PathBuf::from("ui")
 }
 
-fn launch_gui(foreground: bool) -> io::Result<()> {
+fn launch_gui(foreground: bool, open: Option<PathBuf>) -> io::Result<()> {
     let ui_dir = locate_ui_dir();
     let shell_path = ui_dir.join("shell.qml");
 
@@ -533,6 +535,9 @@ fn launch_gui(foreground: bool) -> io::Result<()> {
         .arg(&shell_path)
         .env("NEXUS_BIN", &current_exe)
         .env("NEXUS_UI", &ui_dir);
+    if let Some(path) = &open {
+        cmd.env("NEXUS_OPEN", path);
+    }
 
     if foreground {
         cmd.stdin(Stdio::inherit())
@@ -567,6 +572,41 @@ fn launch_gui(foreground: bool) -> io::Result<()> {
     Ok(())
 }
 
+/// The first file named on the command line (a path or a file:// URI), made
+/// absolute so the UI can match it against scanned paths.
+fn file_argument(args: &[String]) -> Option<PathBuf> {
+    let arg = args.iter().find(|a| !a.starts_with('-'))?;
+    let path = PathBuf::from(
+        arg.strip_prefix("file://")
+            .map(percent_decode)
+            .unwrap_or_else(|| arg.clone()),
+    );
+    path.is_file()
+        .then(|| fs::canonicalize(&path).unwrap_or(path))
+}
+
+/// Decode %XX escapes in a file:// URI path.
+fn percent_decode(s: &str) -> String {
+    let bytes = s.as_bytes();
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        let decoded = (bytes[i] == b'%')
+            .then(|| bytes.get(i + 1..i + 3))
+            .flatten()
+            .and_then(|h| std::str::from_utf8(h).ok())
+            .and_then(|h| u8::from_str_radix(h, 16).ok());
+        if let Some(b) = decoded {
+            out.push(b);
+            i += 3;
+            continue;
+        }
+        out.push(bytes[i]);
+        i += 1;
+    }
+    String::from_utf8_lossy(&out).into_owned()
+}
+
 fn main() -> io::Result<()> {
     let args: Vec<String> = env::args().collect();
 
@@ -575,7 +615,9 @@ fn main() -> io::Result<()> {
     } else if args.len() > 1 && (args[1] == "--help" || args[1] == "-h") {
         println!("Nexus Photos — Fast, keyboard-first photo gallery for Omarchy");
         println!();
-        println!("Usage: nexus-photos [OPTIONS]");
+        println!("Usage: nexus-photos [OPTIONS] [FILE]");
+        println!();
+        println!("  FILE              Open this photo or video (its folder is shown alongside it)");
         println!();
         println!("Options:");
         println!("  -f, --foreground  Run in foreground attached to terminal");
@@ -588,6 +630,6 @@ fn main() -> io::Result<()> {
         Ok(())
     } else {
         let foreground = args.iter().any(|arg| arg == "--foreground" || arg == "-f");
-        launch_gui(foreground)
+        launch_gui(foreground, file_argument(&args[1..]))
     }
 }

@@ -10,6 +10,10 @@ import "."
 ShellRoot {
     id: root
 
+    // Singletons are created on first use; start the backend (which loads the
+    // library) as soon as the window opens, not on the first click.
+    Component.onCompleted: Backend.ping()
+
     FloatingWindow {
         id: appWindow
         title: "Nexus Photos"

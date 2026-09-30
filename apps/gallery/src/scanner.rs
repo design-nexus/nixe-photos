@@ -18,13 +18,18 @@ pub fn is_supported_media(ext: &str) -> bool {
 }
 
 pub fn scan_directory(dir: &Path) -> Vec<PhotoItem> {
+    scan_directory_depth(dir, 8)
+}
+
+/// Like [`scan_directory`], but only `depth` levels down (1 = just this folder).
+pub fn scan_directory_depth(dir: &Path, depth: usize) -> Vec<PhotoItem> {
     if !dir.exists() || !dir.is_dir() {
         return Vec::new();
     }
 
     // Collect all supported image and video paths
     let paths: Vec<PathBuf> = WalkDir::new(dir)
-        .max_depth(8)
+        .max_depth(depth)
         .follow_links(true)
         .into_iter()
         .filter_map(|e| e.ok())
