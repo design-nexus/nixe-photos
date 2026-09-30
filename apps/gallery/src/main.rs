@@ -1,17 +1,17 @@
-mod models;
-mod thumbnails;
 mod metadata;
+mod models;
 mod scanner;
+mod thumbnails;
 
+use serde::{Deserialize, Serialize};
 use std::env;
 use std::fs;
 use std::io::{self, BufRead, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
-use serde::{Deserialize, Serialize};
 
-use models::{format_bytes, Album, PhotoItem};
+use models::{Album, PhotoItem, format_bytes};
 use scanner::scan_directory;
 
 #[derive(Debug, Deserialize)]
@@ -20,23 +20,46 @@ enum Request {
     Ping,
     GetStatus,
     GetTheme,
-    ScanLibrary { path: Option<String> },
-    GetPhotos { section: Option<String> },
-    ToggleFavorite { id: String },
-    CreateAlbum { name: String },
-    RenameAlbum { album_id: String, name: String },
-    AddPhotosToAlbum { album_id: String, photo_ids: Vec<String> },
-    RemovePhotoFromAlbum { album_id: String, photo_id: String },
-    DeleteAlbum { album_id: String },
+    ScanLibrary {
+        path: Option<String>,
+    },
+    GetPhotos {
+        section: Option<String>,
+    },
+    ToggleFavorite {
+        id: String,
+    },
+    CreateAlbum {
+        name: String,
+    },
+    RenameAlbum {
+        album_id: String,
+        name: String,
+    },
+    AddPhotosToAlbum {
+        album_id: String,
+        photo_ids: Vec<String>,
+    },
+    RemovePhotoFromAlbum {
+        album_id: String,
+        photo_id: String,
+    },
+    DeleteAlbum {
+        album_id: String,
+    },
     GetAlbums,
-    RevealInStrata { path: String },
+    RevealInStrata {
+        path: String,
+    },
     Quit,
 }
 
 #[derive(Debug, Serialize)]
 #[serde(tag = "t", rename_all = "snake_case")]
 enum Response {
-    Pong { version: &'static str },
+    Pong {
+        version: &'static str,
+    },
     Status {
         library_path: String,
         theme_name: String,
@@ -371,9 +394,14 @@ fn run_backend() -> io::Result<()> {
                     }
                 }
                 save_albums(&albums);
-                Response::Albums { albums: albums.clone() }
+                Response::Albums {
+                    albums: albums.clone(),
+                }
             }
-            Ok(Request::AddPhotosToAlbum { album_id, photo_ids }) => {
+            Ok(Request::AddPhotosToAlbum {
+                album_id,
+                photo_ids,
+            }) => {
                 let mut albums = albums_store.lock().unwrap();
                 for a in albums.iter_mut() {
                     if a.id == album_id {
@@ -386,7 +414,9 @@ fn run_backend() -> io::Result<()> {
                     }
                 }
                 save_albums(&albums);
-                Response::Albums { albums: albums.clone() }
+                Response::Albums {
+                    albums: albums.clone(),
+                }
             }
             Ok(Request::RemovePhotoFromAlbum { album_id, photo_id }) => {
                 let mut albums = albums_store.lock().unwrap();
@@ -397,17 +427,23 @@ fn run_backend() -> io::Result<()> {
                     }
                 }
                 save_albums(&albums);
-                Response::Albums { albums: albums.clone() }
+                Response::Albums {
+                    albums: albums.clone(),
+                }
             }
             Ok(Request::DeleteAlbum { album_id }) => {
                 let mut albums = albums_store.lock().unwrap();
                 albums.retain(|a| a.id != album_id);
                 save_albums(&albums);
-                Response::Albums { albums: albums.clone() }
+                Response::Albums {
+                    albums: albums.clone(),
+                }
             }
             Ok(Request::GetAlbums) => {
                 let albums = albums_store.lock().unwrap();
-                Response::Albums { albums: albums.clone() }
+                Response::Albums {
+                    albums: albums.clone(),
+                }
             }
             Ok(Request::GetTheme) => {
                 let (name, colors) = get_omarchy_colors();
@@ -418,7 +454,11 @@ fn run_backend() -> io::Result<()> {
                 Response::RevealResult { ok, message }
             }
             Ok(Request::Quit) => {
-                let _ = writeln!(out, "{}", serde_json::to_string(&Response::QuitReady).unwrap());
+                let _ = writeln!(
+                    out,
+                    "{}",
+                    serde_json::to_string(&Response::QuitReady).unwrap()
+                );
                 let _ = out.flush();
                 break;
             }
@@ -483,8 +523,7 @@ fn launch_gui(foreground: bool) -> io::Result<()> {
         std::process::exit(1);
     }
 
-    let current_exe = env::current_exe()
-        .unwrap_or_else(|_| PathBuf::from("nexus-photos"));
+    let current_exe = env::current_exe().unwrap_or_else(|_| PathBuf::from("nexus-photos"));
 
     let mut cmd = Command::new("quickshell");
     if !foreground {

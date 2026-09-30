@@ -1,10 +1,10 @@
+use crate::models::{PhotoItem, format_bytes};
+use crate::thumbnails::generate_thumbnail;
+use exif::{Exif, In, Reader, Tag};
 use std::fs::{self, File};
 use std::io::BufReader;
 use std::path::Path;
 use std::time::UNIX_EPOCH;
-use exif::{Exif, In, Reader, Tag};
-use crate::models::{format_bytes, PhotoItem};
-use crate::thumbnails::generate_thumbnail;
 
 pub fn extract_photo_item(path: &Path) -> Option<PhotoItem> {
     let metadata = fs::metadata(path).ok()?;
@@ -59,21 +59,29 @@ pub fn extract_photo_item(path: &Path) -> Option<PhotoItem> {
         Reader::new().read_from_container(&mut bufreader).ok()
     });
 
-    let (camera_make, camera_model, lens_model, aperture, shutter_speed, iso, focal_length, exif_date) =
-        if let Some(ref e) = exif {
-            (
-                get_tag_string(e, Tag::Make),
-                get_tag_string(e, Tag::Model),
-                get_tag_string(e, Tag::LensModel),
-                get_tag_string(e, Tag::FNumber).map(|v| format!("f/{}", v)),
-                get_tag_string(e, Tag::ExposureTime).map(|v| format!("{}s", v)),
-                get_tag_string(e, Tag::PhotographicSensitivity).map(|v| format!("ISO {}", v)),
-                get_tag_string(e, Tag::FocalLength).map(|v| format!("{}mm", v)),
-                get_tag_string(e, Tag::DateTimeOriginal).or_else(|| get_tag_string(e, Tag::DateTime)),
-            )
-        } else {
-            (None, None, None, None, None, None, None, None)
-        };
+    let (
+        camera_make,
+        camera_model,
+        lens_model,
+        aperture,
+        shutter_speed,
+        iso,
+        focal_length,
+        exif_date,
+    ) = if let Some(ref e) = exif {
+        (
+            get_tag_string(e, Tag::Make),
+            get_tag_string(e, Tag::Model),
+            get_tag_string(e, Tag::LensModel),
+            get_tag_string(e, Tag::FNumber).map(|v| format!("f/{}", v)),
+            get_tag_string(e, Tag::ExposureTime).map(|v| format!("{}s", v)),
+            get_tag_string(e, Tag::PhotographicSensitivity).map(|v| format!("ISO {}", v)),
+            get_tag_string(e, Tag::FocalLength).map(|v| format!("{}mm", v)),
+            get_tag_string(e, Tag::DateTimeOriginal).or_else(|| get_tag_string(e, Tag::DateTime)),
+        )
+    } else {
+        (None, None, None, None, None, None, None, None)
+    };
 
     // Parse date or derive from mtime
     let (date_taken, date_display, year, month, day) = parse_or_format_date(exif_date, mtime);
@@ -82,7 +90,10 @@ pub fn extract_photo_item(path: &Path) -> Option<PhotoItem> {
     let lower_name = file_name.to_lowercase();
     let media_type = if crate::scanner::VIDEO_EXTENSIONS.contains(&ext_lower.as_str()) {
         "videos".to_string()
-    } else if lower_name.contains("screenshot") || lower_name.contains("screen_shot") || lower_name.starts_with("scr_") {
+    } else if lower_name.contains("screenshot")
+        || lower_name.contains("screen_shot")
+        || lower_name.starts_with("scr_")
+    {
         "screenshots".to_string()
     } else {
         "photos".to_string()

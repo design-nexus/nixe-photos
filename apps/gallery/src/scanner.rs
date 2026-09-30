@@ -1,15 +1,15 @@
-use std::path::{Path, PathBuf};
-use rayon::prelude::*;
-use walkdir::WalkDir;
 use crate::metadata::extract_photo_item;
 use crate::models::PhotoItem;
+use rayon::prelude::*;
+use std::path::{Path, PathBuf};
+use walkdir::WalkDir;
 
 pub const IMAGE_EXTENSIONS: &[&str] = &[
-    "jpg", "jpeg", "png", "webp", "tiff", "tif", "bmp", "gif", "avif"
+    "jpg", "jpeg", "png", "webp", "tiff", "tif", "bmp", "gif", "avif",
 ];
 
 pub const VIDEO_EXTENSIONS: &[&str] = &[
-    "mp4", "mov", "mkv", "avi", "webm", "m4v", "flv", "wmv", "3gp"
+    "mp4", "mov", "mkv", "avi", "webm", "m4v", "flv", "wmv", "3gp",
 ];
 
 pub fn is_supported_media(ext: &str) -> bool {
