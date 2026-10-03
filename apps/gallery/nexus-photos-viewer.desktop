@@ -1,0 +1,13 @@
+[Desktop Entry]
+Name=Nexus Photos Viewer
+GenericName=Photo Viewer
+Comment=Look at a photo with minimal chrome
+Exec=nexus-photos-viewer %f
+Icon=io.github.nexus.photos
+Terminal=false
+Type=Application
+Categories=Graphics;Photography;Viewer;
+Keywords=photos;viewer;pictures;image;
+MimeType=image/jpeg;image/png;image/webp;image/tiff;image/bmp;image/gif;image/avif;
+StartupWMClass=io.github.nexus.photos.viewer
+StartupNotify=true

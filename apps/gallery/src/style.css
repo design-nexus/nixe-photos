@@ -1,0 +1,1054 @@
+/* Nexus Photos — Nexus app style (see ~/Projects/STYLE.md). Every colour comes from the
+ * @theme_* tokens defined by the active palette (see theme.rs).
+ *
+ * Scales — use these and nothing else:
+ *   radius   4 chips, tags, key caps · 6 controls · 10 cards, banners, popovers · 14 dialogs
+ *   height   28 small controls · 32 controls
+ *   spacing  multiples of 4 */
+
+window.photos-window {
+  background: @theme_bg;
+  color: @theme_text;
+}
+
+window.photos-window,
+window.photos-window popover,
+window.photos-window dialog {
+  font-size: 1.0em;
+}
+
+.mono,
+.value-readout,
+.key-cap {
+  font-family: "JetBrains Mono", "JetBrainsMono Nerd Font", monospace;
+  font-feature-settings: "tnum";
+}
+
+.dim {
+  color: @theme_dim_text;
+}
+
+.accent-text {
+  color: @theme_accent;
+}
+
+/* Small capitals, for labels that sit above other content. */
+.settings-navigation .nav-group,
+.bar-section-title,
+.home-fact-title {
+  font-size: 0.72em;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  color: @theme_dim_text;
+}
+
+/* ---------- Sidebar ---------- */
+
+.settings-navigation {
+  background: @theme_surface;
+  min-width: 240px;
+  padding: 20px 12px 12px;
+  border-right: 1px solid alpha(@theme_border, 0.55);
+}
+
+.settings-navigation.compact {
+  min-width: 0;
+  padding: 16px 8px;
+}
+
+.settings-navigation.compact button.nav-item {
+  min-width: 40px;
+  padding: 0;
+}
+
+.settings-navigation .nav-head {
+  margin: 0 0 12px;
+}
+
+.settings-navigation.compact .nav-head {
+  margin-bottom: 8px;
+}
+
+window.photos-window .settings-navigation button.nav-collapse,
+window.photos-window .settings-navigation button.nav-search {
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0;
+  border-radius: 6px;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+window.photos-window .settings-navigation button.nav-search {
+  min-width: 40px;
+  min-height: 36px;
+  margin-bottom: 4px;
+}
+
+window.photos-window .settings-navigation button.nav-collapse image,
+window.photos-window .settings-navigation button.nav-search image {
+  color: @theme_dim_text;
+}
+
+window.photos-window .settings-navigation button.nav-collapse:hover,
+window.photos-window .settings-navigation button.nav-search:hover {
+  background: alpha(@theme_highlight, 0.7);
+}
+
+window.photos-window .settings-navigation button.nav-collapse:hover image,
+window.photos-window .settings-navigation button.nav-search:hover image {
+  color: @theme_text;
+}
+
+.settings-navigation .menu-heading {
+  margin: 0 8px;
+  font-size: 1.05em;
+  font-weight: 700;
+  color: @theme_text;
+}
+
+.settings-navigation .nav-group {
+  margin: 20px 12px 4px;
+  color: alpha(@theme_dim_text, 0.85);
+}
+
+.settings-navigation button.nav-item {
+  min-height: 36px;
+  padding: 0 12px;
+  margin: 1px 0;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  color: alpha(@theme_text, 0.82);
+  transition: background 150ms ease-out, color 150ms ease-out, box-shadow 150ms ease-out;
+}
+
+.settings-navigation button.nav-item image {
+  color: @theme_dim_text;
+}
+
+.settings-navigation button.nav-item:hover {
+  background: alpha(@theme_highlight, 0.55);
+  color: @theme_text;
+}
+
+.settings-navigation button.nav-item.active {
+  background: alpha(@theme_accent, 0.16);
+  color: @theme_text;
+  box-shadow: inset 0 0 0 1px alpha(@theme_accent, 0.42);
+}
+
+.settings-navigation button.nav-item.active image {
+  color: @theme_accent;
+}
+
+.settings-navigation button.nav-item .nav-label {
+  font-weight: 500;
+}
+
+.settings-navigation button.nav-item.active .nav-label {
+  font-weight: 600;
+}
+
+.settings-navigation .nav-badge {
+  font-size: 0.68em;
+  padding: 0 6px;
+}
+
+.settings-navigation .nav-footer {
+  margin-top: 8px;
+  padding: 8px 12px 0;
+  border-top: 1px solid alpha(@theme_border, 0.45);
+}
+
+/* ---------- Search ---------- */
+
+entry.settings-search,
+entry.settings-search > text {
+  min-height: 32px;
+}
+
+entry.settings-search {
+  margin: 0 0 4px;
+  padding: 0 10px;
+  border-radius: 6px;
+  background: alpha(@theme_bg, 0.7);
+  border: 1px solid alpha(@theme_border, 0.7);
+  box-shadow: none;
+  color: @theme_text;
+  outline: none;
+}
+
+entry.settings-search:focus-within {
+  border-color: alpha(@theme_accent, 0.8);
+  box-shadow: 0 0 0 1px alpha(@theme_accent, 0.38);
+}
+
+entry.settings-search image {
+  color: @theme_dim_text;
+}
+
+.search-empty {
+  padding: 96px 24px;
+}
+
+.search-empty image {
+  color: alpha(@theme_dim_text, 0.6);
+}
+
+.search-empty .search-empty-title {
+  font-size: 1.15em;
+  font-weight: 700;
+}
+
+/* ---------- Page ---------- */
+
+.settings-content {
+  background: @theme_bg;
+}
+
+.settings-page {
+  padding: 32px 40px 48px;
+}
+
+.settings-page.narrow {
+  padding: 24px 20px 40px;
+}
+
+.section-header {
+  margin-bottom: 4px;
+}
+
+.section-title {
+  font-size: 1.5em;
+  font-weight: 700;
+  color: @theme_text;
+}
+
+.section-description {
+  margin-top: 4px;
+  color: @theme_dim_text;
+}
+
+/* ---------- Groups ---------- */
+
+.group-title {
+  margin: 28px 4px 8px;
+  font-size: 0.95em;
+  font-weight: 700;
+  color: alpha(@theme_text, 0.88);
+}
+
+.group-note {
+  margin: -4px 4px 8px;
+  font-size: 0.88em;
+  color: @theme_dim_text;
+}
+
+/* A collapsible group's title is a card row with a chevron; its rows open below. */
+.settings-group.collapsible {
+  margin-top: 12px;
+}
+
+window.photos-window button.group-toggle {
+  min-height: 32px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: mix(@theme_bg, @theme_muted, 0.25);
+  border: 1px solid alpha(@theme_border, 0.55);
+  box-shadow: none;
+}
+
+window.photos-window button.group-toggle:hover {
+  background: mix(@theme_bg, @theme_muted, 0.38);
+  border-color: alpha(@theme_border, 0.95);
+}
+
+window.photos-window button.group-toggle .settings-option-description {
+  font-weight: 400;
+}
+
+.settings-group.collapsible revealer > box {
+  padding-top: 8px;
+}
+
+image.chevron {
+  color: @theme_dim_text;
+  transition: -gtk-icon-transform 180ms ease-out;
+}
+
+.open image.chevron {
+  -gtk-icon-transform: rotate(90deg);
+}
+
+/* One card per group; its rows are split by hairlines. */
+.settings-card {
+  background: mix(@theme_bg, @theme_muted, 0.25);
+  border: 1px solid alpha(@theme_border, 0.55);
+  border-radius: 10px;
+}
+
+.settings-card .card-row {
+  border-top: 1px solid alpha(@theme_text, 0.09);
+}
+
+.settings-card > .card-row:first-child,
+.settings-card > :first-child > .card-row:first-child,
+.settings-card .card-row.first-shown {
+  border-top-color: transparent;
+}
+
+/* Plain text placed straight in a card (status lines, "nothing found"). */
+.settings-card > label,
+.settings-card > box > label {
+  padding: 12px 16px;
+}
+
+/* ---------- Rows ---------- */
+
+/* GTK's min-height is the content box: 32 + padding = 52. */
+.settings-option {
+  min-height: 32px;
+  padding: 10px 16px;
+  transition: background 150ms ease-out, box-shadow 150ms ease-out;
+}
+
+/* A row on its own, outside a card, keeps its own frame. */
+.settings-option:not(.card-row),
+.settings-page > .settings-option,
+.plain-list > .settings-option:not(.bare) {
+  background: mix(@theme_bg, @theme_muted, 0.25);
+  border: 1px solid alpha(@theme_border, 0.55);
+  border-radius: 10px;
+}
+
+.settings-option.search-hit {
+  background: alpha(@theme_accent, 0.1);
+  box-shadow: inset 3px 0 0 @theme_accent;
+}
+
+.settings-option.tall {
+  padding: 14px 16px;
+}
+
+/* A row that only carries its content (e.g. the theme grid in a plain group). */
+.settings-option.bare {
+  padding: 0;
+}
+
+.settings-option-title {
+  color: @theme_text;
+  font-weight: 600;
+}
+
+.settings-option-description {
+  margin-top: 1px;
+  color: @theme_dim_text;
+  font-size: 0.88em;
+}
+
+.settings-option-description link {
+  color: @theme_accent;
+}
+
+.value-readout {
+  color: @theme_text;
+  min-width: 64px;
+}
+
+/* ---------- Disclosure (a row that opens more rows) ---------- */
+
+window.photos-window button.disclosure {
+  min-height: 32px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+window.photos-window button.disclosure:hover {
+  background: alpha(@theme_highlight, 0.35);
+}
+
+window.photos-window button.disclosure .settings-option-description {
+  font-weight: 400;
+}
+
+.disclosure-content {
+  padding: 0 16px 12px;
+}
+
+.disclosure-content > .settings-option {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* A disclosure outside a card draws its own frame. */
+.disclosure-row:not(.card-row),
+.settings-page > .disclosure-row {
+  background: mix(@theme_bg, @theme_muted, 0.25);
+  border: 1px solid alpha(@theme_border, 0.55);
+  border-radius: 10px;
+}
+
+/* ---------- Buttons ---------- */
+
+window.photos-window button {
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 6px;
+  background: alpha(@theme_muted, 0.32);
+  border: 1px solid alpha(@theme_border, 0.8);
+  box-shadow: none;
+  color: @theme_text;
+  transition: background 150ms ease-out, border-color 150ms ease-out, color 150ms ease-out;
+}
+
+window.photos-window button:hover {
+  background: alpha(@theme_muted, 0.55);
+  border-color: alpha(@theme_accent, 0.55);
+}
+
+window.photos-window button:active {
+  background: alpha(@theme_accent, 0.22);
+}
+
+window.photos-window button:disabled {
+  opacity: 0.45;
+}
+
+window.photos-window button.suggested-action {
+  background: @theme_accent;
+  border-color: @theme_accent;
+  color: @theme_on_accent;
+  font-weight: 600;
+}
+
+window.photos-window button.suggested-action:hover {
+  background: mix(@theme_accent, @theme_text, 0.12);
+}
+
+window.photos-window button.destructive-action {
+  background: alpha(@theme_danger, 0.12);
+  border-color: alpha(@theme_danger, 0.55);
+  color: @theme_danger;
+}
+
+/* The first click of a two-step button: the second one does it. */
+window.photos-window button.armed {
+  background: alpha(@theme_danger, 0.18);
+  border-color: @theme_danger;
+  color: @theme_danger;
+  font-weight: 600;
+}
+
+window.photos-window button.flat {
+  background: transparent;
+  border-color: transparent;
+}
+
+window.photos-window button.flat:hover {
+  background: alpha(@theme_highlight, 0.55);
+}
+
+window.photos-window button.reset-button {
+  min-height: 28px;
+  min-width: 28px;
+  padding: 0;
+  border-radius: 999px;
+  color: @theme_dim_text;
+}
+
+window.photos-window button.open-config {
+  padding: 0 12px;
+  font-weight: 600;
+}
+
+window.photos-window button.open-config image {
+  color: @theme_accent;
+}
+
+window.photos-window button.chip {
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 0.9em;
+}
+
+window.photos-window button.chip.selected {
+  background: alpha(@theme_accent, 0.2);
+  border-color: alpha(@theme_accent, 0.8);
+  color: @theme_text;
+}
+
+/* ---------- Inputs ---------- */
+
+window.photos-window entry,
+window.photos-window spinbutton {
+  min-height: 32px;
+  border-radius: 6px;
+  background: alpha(@theme_bg, 0.65);
+  border: 1px solid alpha(@theme_border, 0.8);
+  box-shadow: none;
+  color: @theme_text;
+}
+
+window.photos-window entry:focus-within,
+window.photos-window spinbutton:focus-within {
+  border-color: @theme_accent;
+  box-shadow: 0 0 0 1px alpha(@theme_accent, 0.38);
+}
+
+window.photos-window entry.error {
+  border-color: @theme_danger;
+}
+
+window.photos-window dropdown > button {
+  min-width: 160px;
+}
+
+window.photos-window popover > contents {
+  background: @theme_surface;
+  border: 1px solid alpha(@theme_border, 0.7);
+  border-radius: 10px;
+  box-shadow: 0 4px 16px alpha(@theme_shadow, 0.5);
+  color: @theme_text;
+  padding: 4px;
+}
+
+window.photos-window popover listview > row,
+window.photos-window popover list > row {
+  border-radius: 6px;
+  padding: 6px 10px;
+  color: @theme_text;
+}
+
+window.photos-window popover listview > row:hover,
+window.photos-window popover list > row:hover,
+window.photos-window popover listview > row:selected {
+  background: alpha(@theme_accent, 0.18);
+}
+
+window.photos-window switch {
+  min-width: 40px;
+  min-height: 22px;
+  border-radius: 999px;
+  background: alpha(@theme_muted, 0.85);
+  border: 1px solid alpha(@theme_border, 0.9);
+  box-shadow: none;
+}
+
+window.photos-window switch:checked {
+  background: @theme_accent;
+  border-color: @theme_accent;
+}
+
+window.photos-window switch > slider {
+  min-width: 18px;
+  min-height: 18px;
+  margin: 1px;
+  border-radius: 999px;
+  background: @theme_text;
+  border: none;
+  box-shadow: 0 1px 3px alpha(@theme_shadow, 0.5);
+}
+
+window.photos-window switch:checked > slider {
+  background: @theme_on_accent;
+}
+
+window.photos-window scale {
+  padding: 8px 4px;
+}
+
+window.photos-window scale > trough {
+  min-height: 4px;
+  min-width: 4px;
+  border-radius: 999px;
+  background: alpha(@theme_muted, 0.8);
+  border: none;
+}
+
+window.photos-window scale > trough > highlight {
+  border-radius: 999px;
+  background: @theme_accent;
+}
+
+window.photos-window scale > trough > slider,
+window.photos-window scale.marks-before > trough > slider,
+window.photos-window scale.marks-after > trough > slider {
+  -gtk-icon-source: none;
+  background-image: none;
+  min-width: 16px;
+  min-height: 16px;
+  margin: -7px;
+  border-radius: 999px;
+  background: @theme_text;
+  border: 2px solid @theme_accent;
+  box-shadow: 0 0 10px alpha(@theme_glow, 0.35);
+}
+
+window.photos-window scale:disabled {
+  opacity: 0.5;
+}
+
+window.photos-window scale marks {
+  color: alpha(@theme_dim_text, 0.7);
+}
+
+window.photos-window scrollbar {
+  background: transparent;
+}
+
+window.photos-window scrollbar slider {
+  min-width: 6px;
+  border-radius: 999px;
+  background: alpha(@theme_muted, 0.9);
+}
+
+/* ---------- Segmented control ---------- */
+
+.segmented {
+  border-radius: 6px;
+  background: alpha(@theme_muted, 0.32);
+  border: 1px solid alpha(@theme_border, 0.8);
+  padding: 2px;
+}
+
+window.photos-window .segmented button.segment {
+  min-height: 26px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: alpha(@theme_text, 0.78);
+  font-weight: 600;
+}
+
+window.photos-window .segmented button.segment:hover {
+  background: alpha(@theme_highlight, 0.55);
+  color: @theme_text;
+}
+
+window.photos-window .segmented button.segment:checked {
+  background: @theme_accent;
+  color: @theme_on_accent;
+}
+
+/* ---------- Banners, toasts, dialogs ---------- */
+
+.banner {
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: alpha(@theme_accent, 0.1);
+  border: 1px solid alpha(@theme_accent, 0.4);
+  margin: 16px 0 0;
+}
+
+.banner.warning {
+  background: alpha(@theme_danger, 0.1);
+  border-color: alpha(@theme_danger, 0.45);
+}
+
+.settings-card .banner,
+.disclosure-content .banner {
+  margin: 8px 0;
+}
+
+.settings-group .banner {
+  margin: 0 0 8px;
+}
+
+.toast {
+  margin: 20px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: @theme_surface;
+  border: 1px solid alpha(@theme_border, 0.8);
+  box-shadow: 0 4px 16px alpha(@theme_shadow, 0.5), 0 0 14px alpha(@theme_glow, 0.14);
+}
+
+.dialog-card {
+  background: @theme_bg;
+  border: 1px solid alpha(@theme_border, 0.65);
+  border-radius: 14px;
+  box-shadow: 0 0 28px alpha(@theme_glow, 0.08);
+  padding: 24px;
+}
+
+.tag {
+  font-size: 0.72em;
+  font-weight: 700;
+  padding: 1px 8px;
+  border-radius: 999px;
+  color: @theme_accent;
+  background: alpha(@theme_accent, 0.14);
+  border: 1px solid alpha(@theme_accent, 0.4);
+}
+
+.key-cap {
+  font-size: 0.85em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: alpha(@theme_muted, 0.55);
+  border: 1px solid alpha(@theme_border, 0.9);
+}
+
+/* ---------- Swatches ---------- */
+
+.swatch {
+  min-width: 16px;
+  min-height: 16px;
+  border-radius: 4px;
+  border: 1px solid alpha(@theme_shadow, 0.4);
+}
+
+/* ---------- Gallery ---------- */
+
+.gallery-bar {
+  padding: 10px 20px;
+  border-bottom: 1px solid alpha(@theme_border, 0.45);
+}
+
+.narrow .gallery-bar {
+  padding: 8px 12px;
+}
+
+.gallery-bar .segmented {
+  margin: 0;
+}
+
+window.photos-window button.icon-button.active {
+  background: alpha(@theme_accent, 0.16);
+  color: @theme_text;
+}
+
+listview.gallery-list,
+listview.gallery-list > row {
+  background: transparent;
+  padding: 0;
+}
+
+.gallery-header {
+  margin: 16px 0 8px;
+}
+
+.gallery-header .group-title {
+  margin: 0;
+  font-size: 1.05em;
+}
+
+.gallery-sub {
+  font-size: 0.88em;
+}
+
+.photo-cell {
+  border-radius: 6px;
+  background: mix(@theme_bg, @theme_muted, 0.25);
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+  transition: outline-color 150ms ease-out;
+}
+
+.photo-cell:hover {
+  outline-color: alpha(@theme_accent, 0.45);
+}
+
+.photo-cell.cursor {
+  outline-color: alpha(@theme_accent, 0.72);
+}
+
+.photo-cell.selected {
+  outline-color: @theme_accent;
+  box-shadow: 0 0 14px alpha(@theme_glow, 0.24);
+}
+
+window.photos-window button.cell-star {
+  min-width: 28px;
+  min-height: 28px;
+  margin: 6px;
+  padding: 0;
+  border-radius: 999px;
+  border: none;
+  color: @theme_text;
+  background: alpha(@theme_shadow, 0.55);
+  opacity: 0;
+  transition: opacity 150ms ease-out, background 150ms ease-out;
+}
+
+.photo-cell:hover button.cell-star,
+window.photos-window button.cell-star.on {
+  opacity: 1;
+}
+
+window.photos-window button.cell-star.on {
+  color: @theme_accent;
+}
+
+window.photos-window button.cell-star:hover {
+  background: alpha(@theme_shadow, 0.8);
+  color: @theme_accent;
+}
+
+.cell-check {
+  margin: 6px;
+  padding: 3px;
+  border-radius: 999px;
+  color: @theme_on_accent;
+  background: @theme_accent;
+}
+
+.cell-badge {
+  margin: 6px;
+  color: @theme_text;
+  background: alpha(@theme_shadow, 0.65);
+}
+
+.status-bar {
+  padding: 6px 20px;
+  border-top: 1px solid alpha(@theme_border, 0.45);
+  font-size: 0.88em;
+}
+
+.narrow .status-bar {
+  padding: 6px 12px;
+}
+
+/* ---------- Sidebar extras ---------- */
+
+.settings-navigation .nav-count {
+  font-size: 0.82em;
+  color: @theme_dim_text;
+}
+
+.settings-navigation .nav-group-row {
+  margin: 20px 0 4px;
+}
+
+.settings-navigation .nav-group-row .nav-group {
+  margin: 0 12px;
+}
+
+.settings-navigation.compact .nav-group-row {
+  margin: 8px 0 4px;
+}
+
+.settings-navigation button.nav-settings {
+  margin-bottom: 4px;
+}
+
+/* ---------- Photo info drawer ---------- */
+
+.inspector {
+  background: @theme_surface;
+  border-left: 1px solid alpha(@theme_border, 0.55);
+}
+
+.inspector-head {
+  padding: 14px 12px 4px 16px;
+}
+
+.inspector-body {
+  padding: 4px 16px 20px;
+}
+
+.inspector-body .group-title {
+  margin: 16px 2px 6px;
+}
+
+.inspector-preview-frame {
+  border-radius: 10px;
+  background: alpha(@theme_bg, 0.65);
+  border: 1px solid alpha(@theme_border, 0.55);
+  padding: 6px;
+}
+
+.inspector-name {
+  margin: 10px 2px 0;
+  font-weight: 700;
+}
+
+.inspector-sub {
+  margin: 2px 2px 0;
+  font-size: 0.88em;
+}
+
+.detail-grid {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: mix(@theme_bg, @theme_muted, 0.25);
+  border: 1px solid alpha(@theme_border, 0.55);
+}
+
+.detail-key {
+  color: @theme_dim_text;
+  font-size: 0.9em;
+}
+
+.detail-value {
+  font-size: 0.9em;
+}
+
+window.photos-window button.action-button {
+  min-height: 32px;
+  padding: 0 10px;
+}
+
+window.photos-window button.action-button.danger {
+  color: @theme_danger;
+}
+
+.album-chips flowboxchild {
+  padding: 0;
+  background: none;
+}
+
+/* ---------- Viewer ---------- */
+
+.lightbox {
+  background: mix(@theme_bg, @theme_shadow, 0.7);
+}
+
+.lightbox-bar {
+  padding: 12px 16px;
+}
+
+.lightbox-title {
+  font-weight: 700;
+}
+
+.lightbox-loading {
+  margin: 16px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: alpha(@theme_surface, 0.85);
+}
+
+window.photos-window button.lightbox-nav {
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0;
+  margin: 0 16px;
+  border-radius: 999px;
+  background: alpha(@theme_surface, 0.8);
+}
+
+/* ---------- Editor ---------- */
+
+.editor {
+  background: @theme_bg;
+}
+
+.editor-bar {
+  padding: 12px 16px;
+  border-bottom: 1px solid alpha(@theme_border, 0.45);
+}
+
+.editor-canvas {
+  background: mix(@theme_bg, @theme_surface, 0.5);
+}
+
+.editor-panel {
+  background: @theme_surface;
+  border-left: 1px solid alpha(@theme_border, 0.55);
+  padding: 12px 16px 0;
+}
+
+.editor-tools {
+  padding-bottom: 24px;
+}
+
+.editor-tools .group-title {
+  margin: 20px 4px 8px;
+}
+
+.editor-tools .group-title:first-child {
+  margin-top: 8px;
+}
+
+.slider-row scale {
+  padding: 4px 0;
+}
+
+.split-button > button:first-child {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.split-button > menubutton > button {
+  min-width: 28px;
+  padding: 0;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-left-color: alpha(@theme_on_accent, 0.3);
+}
+
+window.photos-window button.tool-button {
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0 8px;
+  background: alpha(@theme_muted, 0.32);
+  border: 1px solid alpha(@theme_border, 0.8);
+}
+
+window.photos-window button.chip:checked {
+  background: alpha(@theme_accent, 0.2);
+  border-color: alpha(@theme_accent, 0.8);
+}
+
+window.photos-window button.swatch-button {
+  min-width: 28px;
+  min-height: 28px;
+  padding: 3px;
+  border-radius: 999px;
+  background: transparent;
+  border: 2px solid transparent;
+}
+
+window.photos-window button.swatch-button:hover {
+  border-color: alpha(@theme_border, 0.95);
+}
+
+window.photos-window button.swatch-button.selected {
+  border-color: @theme_accent;
+  box-shadow: 0 0 10px alpha(@theme_glow, 0.35);
+}
+
+.swatch-dot {
+  min-width: 18px;
+  min-height: 18px;
+  border-radius: 999px;
+  border: 1px solid alpha(@theme_shadow, 0.5);
+}
+
+window.photos-window spinbutton > button {
+  min-width: 24px;
+  padding: 0;
+}
+
+window.photos-window spinbutton > text {
+  min-width: 0;
+}
+
+window.photos-window button.icon-button {
+  min-width: 28px;
+  padding: 0 6px;
+}
+
+.editor-tools .settings-option.tall {
+  padding: 10px 16px;
+}
+
+window.photos-window menubutton.icon-button > button {
+  min-width: 28px;
+  padding: 0 6px;
+  background: transparent;
+  border-color: transparent;
+}
+
+window.photos-window menubutton.icon-button > button:hover {
+  background: alpha(@theme_highlight, 0.55);
+}

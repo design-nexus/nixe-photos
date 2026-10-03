@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct PhotoItem {
     pub id: String,
     pub file_name: String,
@@ -12,10 +12,11 @@ pub struct PhotoItem {
     pub date_display: String,
     pub year: i32,
     pub month: u32,
-    pub day: u32,
     pub width: u32,
     pub height: u32,
+    /// Where the cached thumbnail is, or will be once it has been made.
     pub thumbnail_path: String,
+    pub mtime: u64,
     pub camera_make: Option<String>,
     pub camera_model: Option<String>,
     pub lens_model: Option<String>,
@@ -25,6 +26,13 @@ pub struct PhotoItem {
     pub iso: Option<String>,
     pub is_favorite: bool,
     pub media_type: String, // "photos", "screenshots", "videos"
+}
+
+impl PhotoItem {
+    /// A file that can be shown now: the cached thumbnail if it exists, else the original.
+    pub fn preview_path(&self) -> &str {
+        if std::path::Path::new(&self.thumbnail_path).exists() { &self.thumbnail_path } else { &self.path }
+    }
 }
 
 pub fn format_bytes(bytes: u64) -> String {

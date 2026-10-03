@@ -1,0 +1,25 @@
+//! Nexus Photos: the gallery (`nexus-photos`) and the stand-alone viewer
+//! (`nexus-photos-viewer`) share these modules.
+
+#![allow(clippy::new_without_default)]
+pub mod clamp;
+pub mod cmd;
+pub mod dialog;
+pub mod edit;
+pub mod editor;
+pub mod grid;
+pub mod inspector;
+pub mod library;
+pub mod lightbox;
+pub mod metadata;
+pub mod models;
+pub mod paths;
+pub mod prefs;
+pub mod scanner;
+pub mod settings_view;
+pub mod stage;
+pub mod state;
+pub mod theme;
+pub mod thumbnails;
+pub mod widgets;
+pub mod window;

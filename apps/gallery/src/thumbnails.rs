@@ -5,38 +5,35 @@ use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 
 pub fn get_cache_dir() -> PathBuf {
-    let cache_dir = dirs::cache_dir()
-        .map(|c| c.join("nexus-photos").join("thumbnails"))
-        .unwrap_or_else(|| PathBuf::from("/tmp/nexus-photos-thumbnails"));
+    let cache_dir = crate::paths::thumbnail_dir();
     let _ = fs::create_dir_all(&cache_dir);
     cache_dir
 }
 
-pub fn generate_thumbnail(path: &Path, mtime: u64) -> String {
-    let cache_dir = get_cache_dir();
-
-    // Deterministic hash based on canonical path + modified time
+/// Where the thumbnail for `path` lives (or will live) in the cache. The name depends
+/// on the path and the modification time, so an edited photo gets a fresh one.
+pub fn cache_path(path: &Path, mtime: u64) -> PathBuf {
     let mut hasher = DefaultHasher::new();
     path.to_string_lossy().hash(&mut hasher);
     mtime.hash(&mut hasher);
-    let hash_val = hasher.finish();
+    crate::paths::thumbnail_dir().join(format!("{:016x}.jpg", hasher.finish()))
+}
 
-    let thumb_file_name = format!("{:016x}.jpg", hash_val);
-    let thumb_path = cache_dir.join(&thumb_file_name);
+/// Make the thumbnail if it isn't cached yet, and return the file to show: the
+/// thumbnail, or the original when one can't be made. Reads the whole image, so run
+/// it off the UI thread.
+pub fn generate_thumbnail(path: &Path, mtime: u64) -> String {
+    let _ = get_cache_dir();
+    let thumb_path = cache_path(path, mtime);
 
     if thumb_path.exists() {
         return thumb_path.to_string_lossy().to_string();
     }
 
-    let ext_lower = path
-        .extension()
-        .map(|e| e.to_string_lossy().to_lowercase())
-        .unwrap_or_default();
+    let ext_lower = path.extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
 
     // If it is a video, use ffmpegthumbnailer or ffmpeg
-    if crate::scanner::VIDEO_EXTENSIONS.contains(&ext_lower.as_str())
-        && generate_video_thumbnail(path, &thumb_path)
-    {
+    if crate::scanner::VIDEO_EXTENSIONS.contains(&ext_lower.as_str()) && generate_video_thumbnail(path, &thumb_path) {
         return thumb_path.to_string_lossy().to_string();
     }
 
