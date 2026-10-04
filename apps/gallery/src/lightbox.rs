@@ -77,27 +77,36 @@ impl Lightbox {
         root.add_css_class("lightbox");
         root.set_visible(false);
 
-        // Top bar, over the picture.
-        let top = hbox(8);
-        top.add_css_class("lightbox-bar");
+        // Top bar: over the picture in the gallery; in the stand-alone viewer, a
+        // solid bar above it like the other apps' top bars.
+        let top = hbox(if standalone { 4 } else { 8 });
+        top.add_css_class(if standalone { "top-bar" } else { "lightbox-bar" });
         top.set_valign(gtk::Align::Start);
         let back = gtk::Button::new();
         if standalone {
-            back.set_child(Some(&widgets::button_content("view-grid-symbolic", "Open in gallery")));
-            back.set_tooltip_text(Some("G"));
+            back.set_icon_name("view-grid-symbolic");
+            back.add_css_class("bar-button");
+            back.set_tooltip_text(Some("Open in the gallery (G)"));
+            back.set_valign(gtk::Align::Center);
             back.set_visible(crate::cmd::present("nexus-photos"));
         } else {
             back.set_child(Some(&widgets::button_content("go-previous-symbolic", "Back to gallery")));
             back.set_tooltip_text(Some("Esc"));
         }
         top.append(&back);
-        let name = label("", "lightbox-title");
+        let name = label("", if standalone { "crumb" } else { "lightbox-title" });
         name.set_ellipsize(gtk::pango::EllipsizeMode::Middle);
         name.set_margin_start(8);
         let position = label("", "dim mono");
-        let titles = hbox(12);
+        let titles = hbox(if standalone { 10 } else { 12 });
         titles.set_hexpand(true);
         titles.set_halign(gtk::Align::Start);
+        if standalone {
+            titles.add_css_class("crumbs");
+            name.set_margin_start(0);
+            titles.append(&label("Photo Viewer", "crumb-root"));
+            titles.append(&label("/", "crumb-sep"));
+        }
         titles.append(&name);
         titles.append(&position);
         top.append(&titles);
@@ -115,6 +124,9 @@ impl Lightbox {
         let reveal = widgets::icon_button("folder-open-symbolic", "Reveal in file manager (Ctrl+O)");
         let close = widgets::icon_button("window-close-symbolic", "Close (Esc)");
         for b in [&favorite, &edit, &rotate, &slideshow, &copy, &wallpaper, &reveal, &close] {
+            if standalone {
+                b.add_css_class("bar-button");
+            }
             top.append(b);
         }
 
@@ -131,8 +143,16 @@ impl Lightbox {
         play.set_valign(gtk::Align::Center);
         play.set_visible(false);
         overlay.add_overlay(&play);
-        root.set_child(Some(overlay));
-        root.add_overlay(&top);
+        if standalone {
+            let column = gtk::Box::new(gtk::Orientation::Vertical, 0);
+            column.append(&top);
+            overlay.set_vexpand(true);
+            column.append(overlay);
+            root.set_child(Some(&column));
+        } else {
+            root.set_child(Some(overlay));
+            root.add_overlay(&top);
+        }
 
         // A turned view isn't saved: say so, and offer to.
         let rotation_note = hbox(8);

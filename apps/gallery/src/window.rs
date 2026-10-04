@@ -1,5 +1,7 @@
-//! The main window: the sidebar with search, the gallery page and the settings page
-//! side by side in a stack, the photo info drawer, the viewer and toasts.
+//! The main window: a top bar (sidebar toggle, where you are, search, settings,
+//! close), the sidebar, the gallery page with the photo info drawer, a status
+//! bar, the viewer and toasts. Settings opens as a card over the window (see
+//! `settings_dialog`).
 
 use crate::editor::{Editor, Outcome};
 use crate::grid::{CellData, Gallery};
@@ -7,7 +9,7 @@ use crate::inspector::{self, Inspector};
 use crate::lightbox::{self, Lightbox};
 use crate::state::{LIBRARY_SECTIONS, MEDIA_SECTIONS, State};
 use crate::widgets::{self, hbox, label, vbox};
-use crate::{cmd, dialog, library, paths, prefs, settings_view, theme};
+use crate::{cmd, dialog, library, paths, prefs, settings_dialog, settings_view, theme};
 use gtk::prelude::*;
 use gtk::{gdk, gio, glib};
 use std::cell::{Cell, RefCell};
@@ -39,8 +41,9 @@ pub struct App {
     editor: Editor,
     pages: gtk::Stack,
     gallery_page: gtk::Box,
-    settings_page: RefCell<Option<gtk::ScrolledWindow>>,
     page: RefCell<String>,
+    /// The current section's name, in the top bar.
+    crumb: gtk::Label,
     // Header
     header_actions: gtk::Box,
     info_button: gtk::Button,
@@ -63,20 +66,16 @@ pub struct App {
     // Status bar
     status_items: gtk::Label,
     status_selection: gtk::Label,
-    status_hints: gtk::Box,
     // Sidebar
     nav: gtk::Box,
     nav_items: RefCell<HashMap<String, gtk::Button>>,
     albums_box: gtk::Box,
     search: gtk::SearchEntry,
-    search_icon: gtk::Button,
     collapse_button: gtk::Button,
-    compact_fixed: RefCell<Vec<gtk::Widget>>,
     compact_items: RefCell<Vec<gtk::Widget>>,
     counts: RefCell<HashMap<String, gtk::Label>>,
     compact: Cell<bool>,
     narrow: Cell<bool>,
-    temp_expanded: Cell<bool>,
     // Misc
     toast: RefCell<Option<gtk::Revealer>>,
     scan_depth: Cell<usize>,
@@ -195,28 +194,12 @@ impl App {
         let nav = vbox(0);
         nav.add_css_class("settings-navigation");
         nav.set_hexpand(false);
-        let heading = label(APP_NAME, "menu-heading");
-        heading.set_hexpand(true);
-        let head = hbox(0);
-        head.add_css_class("nav-head");
-        head.append(&heading);
-        let collapse_button = gtk::Button::from_icon_name("sidebar-show-symbolic");
-        collapse_button.add_css_class("nav-collapse");
-        collapse_button.set_tooltip_text(Some("Collapse the sidebar (Ctrl+B)"));
-        collapse_button.set_valign(gtk::Align::Center);
-        head.append(&collapse_button);
-        nav.append(&head);
-
+        let collapse_button = widgets::bar_button("sidebar-show-symbolic", "Collapse the sidebar (Ctrl+B)");
         let search = gtk::SearchEntry::new();
         search.set_placeholder_text(Some("Search photos"));
-        search.add_css_class("settings-search");
-        nav.append(&search);
-        let search_icon = gtk::Button::from_icon_name("system-search-symbolic");
-        search_icon.add_css_class("nav-search");
-        search_icon.set_tooltip_text(Some("Search photos (Ctrl+F)"));
-        search_icon.set_halign(gtk::Align::Center);
-        search_icon.set_visible(false);
-        nav.append(&search_icon);
+        search.add_css_class("bar-search");
+        search.set_width_chars(26);
+        search.set_visible(false);
 
         let list = vbox(0);
         let albums_box = vbox(0);
@@ -229,20 +212,11 @@ impl App {
             .build();
         nav.append(&nav_scroll);
 
-        let settings_holder = vbox(0);
-        nav.append(&settings_holder);
-        let footer = hbox(6);
-        footer.add_css_class("nav-footer");
-        let version = label(concat!("Nexus Photos ", env!("CARGO_PKG_VERSION")), "dim");
-        version.set_hexpand(true);
-        footer.append(&version);
-        nav.append(&footer);
-
         // ----- Gallery page -----
         let gallery_page = vbox(0);
         gallery_page.set_hexpand(true);
         // One slim bar on top: how to group, how big, and a few actions. No title: the
-        // sidebar already says where you are.
+        // top bar already says where you are.
         let bar = hbox(8);
         bar.add_css_class("gallery-bar");
         let header_actions = hbox(8);
@@ -255,24 +229,26 @@ impl App {
         body_overlay.add_overlay(&inspector.root);
         gallery_page.append(&body_overlay);
 
+        // The bar along the bottom: the shortcuts on the left, what's shown on the right.
         let status = hbox(16);
         status.add_css_class("status-bar");
-        let status_items = label("", "dim");
+        let help = gtk::Button::new();
+        help.add_css_class("status-help");
+        let help_content = hbox(10);
+        help_content.append(&label("F1", "status-key"));
+        help_content.append(&label("Shortcuts", ""));
+        help.set_child(Some(&help_content));
+        help.set_tooltip_text(Some("Show the keyboard shortcuts"));
+        help.connect_clicked(|_| dialog::show_shortcuts(settings_view::SHORTCUTS));
+        status.append(&help);
+        let spacer = hbox(0);
+        spacer.set_hexpand(true);
+        status.append(&spacer);
         let status_selection = label("", "accent-text");
-        status_selection.set_margin_start(4);
-        let status_hints = hbox(14);
-        status_hints.set_hexpand(true);
-        status_hints.set_halign(gtk::Align::End);
-        for (keys, text) in [("Space", "View"), ("E", "Edit"), ("F", "Favorite"), ("I", "Info"), ("?", "Shortcuts")] {
-            let hint = hbox(6);
-            hint.append(&widgets::key_cap(keys));
-            hint.append(&label(text, "dim"));
-            status_hints.append(&hint);
-        }
-        status.append(&status_items);
+        let status_items = label("", "status-readout");
+        status_items.set_ellipsize(gtk::pango::EllipsizeMode::Start);
         status.append(&status_selection);
-        status.append(&status_hints);
-        gallery_page.append(&status);
+        status.append(&status_items);
 
         // ----- Pages and the info drawer -----
         let pages = gtk::Stack::new();
@@ -296,10 +272,39 @@ impl App {
         inspector.root.set_valign(gtk::Align::Fill);
 
         let body = hbox(0);
+        body.set_vexpand(true);
         body.append(&nav);
         body.append(&content);
+
+        // The bar across the top: the sidebar toggle and where you are on the left;
+        // search, settings and close on the right.
+        let top = hbox(4);
+        top.add_css_class("top-bar");
+        top.append(&collapse_button);
+        let crumbs = hbox(10);
+        crumbs.add_css_class("crumbs");
+        crumbs.append(&label("Photos", "crumb-root"));
+        crumbs.append(&label("/", "crumb-sep"));
+        let crumb = label("", "crumb");
+        crumb.set_ellipsize(gtk::pango::EllipsizeMode::End);
+        crumbs.append(&crumb);
+        crumbs.set_hexpand(true);
+        top.append(&crumbs);
+        top.append(&search);
+        let find = widgets::bar_button("system-search-symbolic", "Search photos (Ctrl+F)");
+        top.append(&find);
+        let gear = widgets::bar_button("emblem-system-symbolic", "Settings");
+        top.append(&gear);
+        let close = widgets::bar_button("window-close-symbolic", "Close (Ctrl+W)");
+        top.append(&close);
+
+        let frame = vbox(0);
+        frame.add_css_class("window-frame");
+        frame.append(&top);
+        frame.append(&body);
+        frame.append(&status);
         let overlay = gtk::Overlay::new();
-        overlay.set_child(Some(&body));
+        overlay.set_child(Some(&frame));
         overlay.add_overlay(lightbox.widget());
         overlay.add_overlay(editor.widget());
         window.set_child(Some(&overlay));
@@ -314,8 +319,8 @@ impl App {
             editor,
             pages,
             gallery_page,
-            settings_page: RefCell::new(None),
             page: RefCell::new(String::new()),
+            crumb,
             header_actions,
             info_button: widgets::icon_button("dialog-information-symbolic", "Photo info (I)"),
             zoom_inline: hbox(6),
@@ -332,19 +337,15 @@ impl App {
             more_menu: gtk::MenuButton::new(),
             status_items,
             status_selection,
-            status_hints,
             nav,
             nav_items: RefCell::default(),
             albums_box,
             search,
-            search_icon,
             collapse_button,
-            compact_fixed: RefCell::new(vec![heading.upcast(), footer.upcast()]),
             compact_items: RefCell::default(),
             counts: RefCell::default(),
             compact: Cell::new(false),
             narrow: Cell::new(false),
-            temp_expanded: Cell::new(false),
             toast: RefCell::new(None),
             scan_depth: Cell::new(8),
             extra_root: RefCell::new(None),
@@ -357,10 +358,21 @@ impl App {
             edit_when_opened: Cell::new(false),
             open_after_scan: RefCell::new(None),
         });
-        app.compact_fixed.borrow_mut().push(app.search.clone().upcast());
         app.build_toolbar(&bar);
-        app.build_nav(&list, &settings_holder);
+        app.build_nav(&list);
         app.wire(&nav_scroll);
+        let a = app.clone();
+        find.connect_clicked(move |_| {
+            if a.search.is_visible() && a.search.text().is_empty() {
+                a.search.set_visible(false);
+            } else {
+                a.focus_search();
+            }
+        });
+        let a = app.clone();
+        gear.connect_clicked(move |_| a.show_settings());
+        let w = app.window.clone();
+        close.connect_clicked(move |_| w.close());
         app
     }
 
@@ -531,11 +543,13 @@ impl App {
         list.append(&self.make_group_label(text));
     }
 
-    fn build_nav(self: &Rc<Self>, list: &gtk::Box, settings_holder: &gtk::Box) {
+    fn build_nav(self: &Rc<Self>, list: &gtk::Box) {
         self.compact_items.borrow_mut().clear();
         self.counts.borrow_mut().clear();
         self.nav_items.borrow_mut().clear();
-        self.group_label(list, "Library");
+        let first = self.make_group_label("Library");
+        first.add_css_class("first");
+        list.append(&first);
         for (id, title, icon) in LIBRARY_SECTIONS {
             let n = self.state.borrow().count(id);
             self.nav_item(list, id, icon, title, Some(n));
@@ -563,10 +577,6 @@ impl App {
         list.append(&head);
         list.append(&self.albums_box);
         self.build_albums();
-        self.nav_item(settings_holder, SETTINGS_PAGE, "emblem-system-symbolic", "Settings", None);
-        if let Some(b) = self.nav_items.borrow().get(SETTINGS_PAGE) {
-            b.add_css_class("nav-settings");
-        }
     }
 
     fn build_albums(self: &Rc<Self>) {
@@ -613,27 +623,12 @@ impl App {
         let a = self.clone();
         self.collapse_button.connect_clicked(move |_| a.toggle_sidebar());
         let a = self.clone();
-        self.search_icon.connect_clicked(move |_| a.focus_search());
-        let a = self.clone();
         self.search.connect_search_changed(move |e| {
             a.state.borrow_mut().query = e.text().to_string();
-            if *a.page.borrow() == SETTINGS_PAGE && !e.text().is_empty() {
-                let section = a.state.borrow().section.clone();
-                a.navigate(&section);
-            }
             a.refresh(true);
         });
         let a = self.clone();
         self.search.connect_activate(move |_| a.leave_search());
-        // Back to icons once the search is done with.
-        let focus = gtk::EventControllerFocus::new();
-        let a = self.clone();
-        focus.connect_leave(move |_| {
-            if a.search.text().is_empty() && a.temp_expanded.replace(false) {
-                a.apply_compact(a.narrow.get() || prefs::get().sidebar_collapsed);
-            }
-        });
-        self.search.add_controller(focus);
 
         // Keys. The capture phase sees them before the focused widget does.
         let keys = gtk::EventControllerKey::new();
@@ -718,6 +713,15 @@ impl App {
             }
             return self.editor.handle_key(key, mods);
         }
+        if settings_dialog::is_open() {
+            match key {
+                gdk::Key::Escape => settings_dialog::escape(),
+                gdk::Key::f if ctrl => settings_dialog::focus_search(),
+                gdk::Key::q | gdk::Key::w if ctrl => self.window.close(),
+                _ => return glib::Propagation::Proceed,
+            }
+            return stop;
+        }
         let shift = mods.contains(gdk::ModifierType::SHIFT_MASK);
         if ctrl {
             let browsing = !self.typing() && self.on_gallery();
@@ -742,6 +746,10 @@ impl App {
         }
         if key == gdk::Key::Escape {
             self.escape();
+            return stop;
+        }
+        if key == gdk::Key::F1 {
+            dialog::show_shortcuts(settings_view::SHORTCUTS);
             return stop;
         }
         if self.typing() {
@@ -805,13 +813,8 @@ impl App {
         } else if !self.search.text().is_empty() {
             self.search.set_text("");
             self.leave_search();
-        } else if self.typing() {
+        } else if self.typing() || self.search.is_visible() {
             self.leave_search();
-        } else if !self.on_gallery() {
-            let section = self.state.borrow().section.clone();
-            self.navigate(&section);
-        } else if self.temp_expanded.replace(false) {
-            self.apply_compact(self.narrow.get() || prefs::get().sidebar_collapsed);
         } else {
             self.state.borrow_mut().clear_selection();
             self.refresh_selection(false);
@@ -819,17 +822,22 @@ impl App {
     }
 
     fn on_gallery(&self) -> bool {
-        *self.page.borrow() != SETTINGS_PAGE
+        !settings_dialog::is_open()
     }
 
     // ----- Navigation -----
 
     pub fn navigate(self: &Rc<Self>, id: &str) {
         let id = if id == "timeline" { "all_photos" } else { id };
-        self.lightbox.hide();
         if id == SETTINGS_PAGE {
             self.show_settings();
-        } else {
+            if !self.page.borrow().is_empty() {
+                return;
+            }
+        }
+        let id = if id == SETTINGS_PAGE { "all_photos" } else { id };
+        self.lightbox.hide();
+        {
             let known = self.state.borrow().lib.album(id).is_some()
                 || LIBRARY_SECTIONS.iter().chain(MEDIA_SECTIONS).any(|(s, _, _)| *s == id);
             let id = if known { id } else { "all_photos" };
@@ -842,17 +850,13 @@ impl App {
             self.refresh(true);
             prefs::update(|p| p.last_section = id.to_string());
         }
-        if id == SETTINGS_PAGE {
-            *self.page.borrow_mut() = SETTINGS_PAGE.into();
-        }
         self.mark_active_nav();
         self.apply_inspector_visibility();
     }
 
+    /// Settings, as a card over the window. It's built afresh so the library
+    /// figures are current.
     fn show_settings(self: &Rc<Self>) {
-        if let Some(old) = self.settings_page.borrow_mut().take() {
-            self.pages.remove(&old);
-        }
         let (items, size) = {
             let s = self.state.borrow();
             (s.lib.photos.len(), s.lib.total_bytes_formatted())
@@ -868,10 +872,7 @@ impl App {
         if self.narrow.get() {
             body.add_css_class("narrow");
         }
-        self.pages.add_named(&page, Some("settings"));
-        *self.settings_page.borrow_mut() = Some(page);
-        self.pages.set_visible_child_name("settings");
-        *self.page.borrow_mut() = SETTINGS_PAGE.into();
+        settings_dialog::open(&self.overlay, &self.window, &page, &body);
     }
 
     fn mark_active_nav(&self) {
@@ -902,7 +903,8 @@ impl App {
         let empty = items.is_empty();
         let message = self.empty_message(&s);
         let n = s.shown.len();
-        self.status_items.set_text(&format!("{} · {n} {}", s.section_title(), if n == 1 { "item" } else { "items" }));
+        self.crumb.set_text(&s.section_title());
+        self.status_items.set_text(&format!("{n} {}", if n == 1 { "item" } else { "items" }));
         let spans = s.spans.clone();
         let album = s.album_id().map(String::from);
         let library_empty = s.lib.photos.is_empty() && !self.scanning.get() && s.query.trim().is_empty();
@@ -2114,28 +2116,20 @@ impl App {
     }
 
     fn toggle_sidebar(self: &Rc<Self>) {
-        self.temp_expanded.set(false);
         prefs::update(|p| p.sidebar_collapsed = !p.sidebar_collapsed);
         self.apply_compact(self.narrow.get() || prefs::get().sidebar_collapsed);
     }
 
     fn focus_search(self: &Rc<Self>) {
-        if self.compact.get() {
-            self.temp_expanded.set(true);
-            self.apply_compact(false);
-        }
-        if !self.on_gallery() {
-            let section = self.state.borrow().section.clone();
-            self.navigate(&section);
-        }
+        self.search.set_visible(true);
         self.search.grab_focus();
     }
 
-    /// Hand the keyboard back to the gallery.
+    /// Hand the keyboard back to the gallery; an empty search field goes away.
     fn leave_search(&self) {
         GtkWindowExt::set_focus(&self.window, None::<&gtk::Widget>);
-        if self.temp_expanded.replace(false) {
-            self.apply_compact(self.narrow.get() || prefs::get().sidebar_collapsed);
+        if self.search.text().is_empty() {
+            self.search.set_visible(false);
         }
     }
 
@@ -2145,6 +2139,7 @@ impl App {
         if width <= 0 {
             return;
         }
+        settings_dialog::fit(w);
         let narrow = width < NARROW_BELOW;
         let first = !self.nav.has_css_class("sized");
         if narrow == self.narrow.get() && !first {
@@ -2153,23 +2148,16 @@ impl App {
         self.nav.add_css_class("sized");
         self.narrow.set(narrow);
         self.gallery.set_narrow(narrow);
-        self.status_hints.set_visible(!narrow);
         self.zoom_inline.set_visible(!narrow);
         self.zoom_menu.set_visible(narrow);
         self.quick_actions.set_visible(!narrow);
-        for page in [Some(self.gallery_page.clone().upcast::<gtk::Widget>()), self.settings_body()].into_iter().flatten() {
-            if narrow {
-                page.add_css_class("narrow");
-            } else {
-                page.remove_css_class("narrow");
-            }
+        if narrow {
+            self.gallery_page.add_css_class("narrow");
+        } else {
+            self.gallery_page.remove_css_class("narrow");
         }
         self.apply_compact(narrow || prefs::get().sidebar_collapsed);
         self.apply_inspector_visibility();
-    }
-
-    fn settings_body(&self) -> Option<gtk::Widget> {
-        self.settings_page.borrow().as_ref().and_then(|p| p.child()).and_then(|v| v.first_child()).and_then(|c| c.first_child())
     }
 
     /// The sidebar shows only icons: hide the labels, centre the icons and the toggle.
@@ -2180,10 +2168,9 @@ impl App {
             self.nav.remove_css_class("compact");
         }
         self.compact.set(compact);
-        for w in self.compact_fixed.borrow().iter().chain(self.compact_items.borrow().iter()) {
+        for w in self.compact_items.borrow().iter() {
             w.set_visible(!compact);
         }
-        self.search_icon.set_visible(compact);
         self.collapse_button.set_tooltip_text(Some(if compact {
             "Expand the sidebar (Ctrl+B)"
         } else {
@@ -2301,8 +2288,7 @@ fn centre_icons(w: &gtk::Widget, compact: bool) {
     {
         content.set_halign(if compact { gtk::Align::Center } else { gtk::Align::Fill });
     }
-    if w.has_css_class("nav-collapse")
-        && w.parent().is_some_and(|p| p.has_css_class("nav-head") || p.has_css_class("nav-group-row"))
+    if w.has_css_class("nav-collapse") && w.parent().is_some_and(|p| p.has_css_class("nav-group-row"))
     {
         w.set_halign(if compact { gtk::Align::Center } else { gtk::Align::End });
         w.set_hexpand(compact);

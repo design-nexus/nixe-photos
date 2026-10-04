@@ -46,7 +46,7 @@ const SHORTCUTS: &dialog::Shortcuts = &[(
         ("Open another photo", "Ctrl+Shift+O"),
         ("Open in the gallery", "G"),
         ("Edit in the gallery", "E"),
-        ("Show these shortcuts", "?"),
+        ("Show these shortcuts", "F1"),
         ("Close", "Esc"),
     ],
 )];
@@ -113,6 +113,8 @@ struct Viewer {
     pages: gtk::Stack,
     /// Holds the pages and the toasts.
     overlay: gtk::Overlay,
+    /// The photo's folder, in the status bar.
+    folder: gtk::Label,
     files: RefCell<Vec<PathBuf>>,
     index: Cell<usize>,
     /// Details read so far, by path.
@@ -132,8 +134,32 @@ fn build(app: &gtk::Application, file: Option<PathBuf>) {
     let pages = gtk::Stack::new();
     pages.add_named(&empty_page(), Some("empty"));
     pages.add_named(lightbox.widget(), Some("photo"));
+    pages.set_vexpand(true);
+
+    // The bar along the bottom: the shortcuts on the left, the photo's folder on the right.
+    let status = nexus_photos::widgets::hbox(16);
+    status.add_css_class("status-bar");
+    let help = gtk::Button::new();
+    help.add_css_class("status-help");
+    let help_content = nexus_photos::widgets::hbox(10);
+    help_content.append(&nexus_photos::widgets::label("F1", "status-key"));
+    help_content.append(&nexus_photos::widgets::label("Shortcuts", ""));
+    help.set_child(Some(&help_content));
+    help.set_tooltip_text(Some("Show the keyboard shortcuts"));
+    help.connect_clicked(|_| dialog::show_shortcuts(SHORTCUTS));
+    status.append(&help);
+    let folder = nexus_photos::widgets::label("", "status-readout");
+    folder.set_hexpand(true);
+    folder.set_xalign(1.0);
+    folder.set_ellipsize(gtk::pango::EllipsizeMode::Start);
+    status.append(&folder);
+
+    let frame = nexus_photos::widgets::vbox(0);
+    frame.add_css_class("window-frame");
+    frame.append(&pages);
+    frame.append(&status);
     let overlay = gtk::Overlay::new();
-    overlay.set_child(Some(&pages));
+    overlay.set_child(Some(&frame));
     window.set_child(Some(&overlay));
 
     let v = Rc::new(Viewer {
@@ -142,6 +168,7 @@ fn build(app: &gtk::Application, file: Option<PathBuf>) {
         lightbox,
         pages,
         overlay,
+        folder,
         files: RefCell::default(),
         index: Cell::new(0),
         items: RefCell::default(),
@@ -172,9 +199,13 @@ fn build(app: &gtk::Application, file: Option<PathBuf>) {
     });
     window.add_controller(drop);
 
-    if let Some(button) = find_open_button(&v.pages) {
+    if let Some(button) = find_button(&v.pages, "open-photo") {
         let me = v.clone();
         button.connect_clicked(move |_| me.choose());
+    }
+    if let Some(button) = find_button(&v.pages, "close-viewer") {
+        let w = window.clone();
+        button.connect_clicked(move |_| w.close());
     }
 
     match file {
@@ -190,6 +221,20 @@ fn empty_page() -> gtk::Box {
     page.add_css_class("lightbox");
     page.add_css_class("viewer-empty");
     page.set_valign(gtk::Align::Fill);
+    // The same top bar the photo has, with nothing open yet.
+    let top = nexus_photos::widgets::hbox(4);
+    top.add_css_class("top-bar");
+    let crumbs = nexus_photos::widgets::hbox(10);
+    crumbs.add_css_class("crumbs");
+    crumbs.set_hexpand(true);
+    crumbs.append(&nexus_photos::widgets::label("Photo Viewer", "crumb-root"));
+    crumbs.append(&nexus_photos::widgets::label("/", "crumb-sep"));
+    crumbs.append(&nexus_photos::widgets::label("No photo open", "crumb"));
+    top.append(&crumbs);
+    let close = nexus_photos::widgets::bar_button("window-close-symbolic", "Close (Esc)");
+    close.add_css_class("close-viewer");
+    top.append(&close);
+    page.append(&top);
     let inner = nexus_photos::widgets::vbox(10);
     inner.set_valign(gtk::Align::Center);
     inner.set_vexpand(true);
@@ -217,14 +262,15 @@ fn empty_page() -> gtk::Box {
     page
 }
 
-fn find_open_button(w: &impl IsA<gtk::Widget>) -> Option<gtk::Button> {
+/// The first button inside `w` with this style class.
+fn find_button(w: &impl IsA<gtk::Widget>, class: &str) -> Option<gtk::Button> {
     let w = w.as_ref();
-    if w.has_css_class("open-photo") {
+    if w.has_css_class(class) {
         return w.clone().downcast().ok();
     }
     let mut child = w.first_child();
     while let Some(c) = child {
-        if let Some(b) = find_open_button(&c) {
+        if let Some(b) = find_button(&c, class) {
             return Some(b);
         }
         child = c.next_sibling();
@@ -300,6 +346,7 @@ impl Viewer {
             self.lightbox.hide();
             self.pages.set_visible_child_name("empty");
             self.window.set_title(Some(NAME));
+            self.folder.set_text("");
             return;
         }
         let at = self.index.get().min(files.len() - 1);
@@ -314,6 +361,7 @@ impl Viewer {
         // After `show`: a stack won't switch to a page that is still hidden.
         self.pages.set_visible_child_name("photo");
         self.window.set_title(Some(&format!("{} — {NAME}", photo.file_name)));
+        self.folder.set_text(&files[at].parent().map(nexus_photos::paths::pretty).unwrap_or_default());
         let n = files.len();
         if n > 1 {
             for i in [(at + 1) % n, (at + n - 1) % n] {
@@ -345,7 +393,7 @@ impl Viewer {
                 gdk::Key::q | gdk::Key::w if ctrl => self.window.close(),
                 gdk::Key::o if ctrl => self.choose(),
                 gdk::Key::Escape => self.window.close(),
-                gdk::Key::question => dialog::show_shortcuts(SHORTCUTS),
+                gdk::Key::question | gdk::Key::F1 => dialog::show_shortcuts(SHORTCUTS),
                 _ => return glib::Propagation::Proceed,
             }
             return glib::Propagation::Stop;
@@ -373,7 +421,7 @@ impl Viewer {
             gdk::Key::w => self.set_background(),
             gdk::Key::Delete | gdk::Key::KP_Delete => self.delete(),
             gdk::Key::F2 => self.rename(),
-            gdk::Key::question => dialog::show_shortcuts(SHORTCUTS),
+            gdk::Key::question | gdk::Key::F1 => dialog::show_shortcuts(SHORTCUTS),
             gdk::Key::e | gdk::Key::E => self.open_in_gallery(true),
             gdk::Key::g | gdk::Key::G => self.open_in_gallery(false),
             _ => return glib::Propagation::Proceed,

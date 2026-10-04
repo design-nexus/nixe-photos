@@ -1,14 +1,18 @@
 # Nexus Photos — notes for working on this repo
 
-- GTK4 (gtk4-rs 0.11) + Rust, no libadwaita. The look follows `~/Projects/STYLE.md`;
-  the reference implementation is `~/Projects/settings` (`src/theme.rs`, `src/style.css`).
+- GTK4 (gtk4-rs 0.11) + Rust, no libadwaita. The window is one flat, monospace surface
+  split by hairlines: a top bar (sidebar toggle, `Photos / <section>`, search, settings,
+  close), the sidebar, the gallery (its own toolbar row, the grid, the info drawer) and
+  a status bar (`F1 Shortcuts` · items). Settings is a card over the window
+  (`settings_dialog.rs`), rebuilt from `settings_view::build` each time it opens, listing
+  its groups (named by `widgets::group`).
   Every colour in `src/style.css` is a `@theme_*` token; `src/theme.rs` loads the
   palette and the stylesheet as one provider, so a theme change restyles live.
 - Layout: `window.rs` owns the `App` (sidebar, pages, toasts, key handling and all
   actions; the toolbar's quick actions and its album and ⋯ menus, built when opened). `state.rs` is plain data (section, search, timeline groups, selection) with
   the unit tests. `grid.rs` is the thumbnail grid: a virtualised `ListView` whose rows are
   headings or rows of thumbnails. `lightbox.rs` is the viewer, `inspector.rs` the info
-  drawer (information only, no actions), `settings_view.rs` the settings page, `library.rs` scanning, favourites and
+  drawer (information only, no actions), `settings_view.rs` the settings page (shown in `settings_dialog.rs`), `library.rs` scanning, favourites and
   albums (atomic writes).
 - Two binaries share one library (`lib.rs`): `nexus-photos` (`main.rs`) and `npv`, Nexus Photo
   Viewer (`src/bin/npv.rs`, one folder of photos, hands off to the gallery with `nexus-photos [--edit] FILE`).

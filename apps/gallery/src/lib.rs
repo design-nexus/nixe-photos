@@ -18,6 +18,7 @@ pub mod models;
 pub mod paths;
 pub mod prefs;
 pub mod scanner;
+pub mod settings_dialog;
 pub mod settings_view;
 pub mod stage;
 pub mod state;

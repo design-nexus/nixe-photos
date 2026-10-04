@@ -570,7 +570,7 @@ impl AdjustParts {
         root.append(&resize_note);
 
         // Light and colour
-        root.append(&label("Light and colour", "group-title"));
+        root.append(&label("Light and color", "group-title"));
         let light = card();
         let mut sliders = Vec::new();
         for title in ["Brightness", "Contrast", "Saturation"] {
@@ -672,7 +672,7 @@ impl MarkupParts {
         hint.set_margin_top(4);
         root.append(&hint);
 
-        root.append(&label("Colour", "group-title"));
+        root.append(&label("Color", "group-title"));
         let swatch_row = gtk::FlowBox::new();
         swatch_row.set_selection_mode(gtk::SelectionMode::None);
         swatch_row.set_max_children_per_line(12);
@@ -696,7 +696,7 @@ impl MarkupParts {
         let custom_row = hbox(8);
         custom_row.set_margin_top(8);
         let custom = gtk::ColorDialogButton::new(Some(gtk::ColorDialog::new()));
-        custom.set_tooltip_text(Some("Choose another colour"));
+        custom.set_tooltip_text(Some("Choose another color"));
         let hex = gtk::Entry::new();
         hex.add_css_class("mono");
         hex.set_width_chars(8);

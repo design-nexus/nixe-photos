@@ -39,7 +39,7 @@ pub const SHORTCUTS: &[(&str, &[(&str, &str)])] = &[
             ("Search", "Ctrl+F"),
             ("Collapse the sidebar", "Ctrl+B"),
             ("Reveal in the file manager", "Ctrl+O"),
-            ("Show these shortcuts", "?"),
+            ("Show these shortcuts", "F1"),
         ],
     ),
     (
@@ -74,10 +74,6 @@ pub fn build(info: Info) -> (gtk::ScrolledWindow, gtk::Box) {
     body.add_css_class("settings-page");
     body.set_hexpand(true);
 
-    let (header, actions) = widgets::page_header("Settings", "How Nexus Photos looks, and where it finds your photos.");
-    actions.append(&widgets::open_config_button(&[paths::prefs_file()]));
-    body.append(&header);
-
     let on_layout = info.on_layout.clone();
     body.append(&window_group().wrapper);
     body.append(&library_group(info).wrapper);
@@ -108,7 +104,7 @@ fn window_group() -> widgets::Group {
     refresh_swatches(&swatches);
 
     let (theme_row, dropdown) =
-        widgets::choice_row("Theme", "Colours for the window, when it isn't following Omarchy.", options, &p.theme, {
+        widgets::choice_row("Theme", "Colors for the window, when it isn't following Omarchy.", options, &p.theme, {
             let swatches = swatches.clone();
             move |id| {
                 prefs::update(|p| {
@@ -124,7 +120,7 @@ fn window_group() -> widgets::Group {
     if omarchy {
         let (row, switch) = widgets::switch_row(
             "Follow Omarchy theme",
-            "Match the colours of the current Omarchy theme as it changes.",
+            "Match the colors of the current Omarchy theme as it changes.",
             following,
             {
                 let (dropdown, swatches) = (dropdown.clone(), swatches.clone());
@@ -145,7 +141,7 @@ fn window_group() -> widgets::Group {
         });
     }
     group.add(&theme_row);
-    group.add(&widgets::row("Current colours", "", Some(swatches.upcast_ref())));
+    group.add(&widgets::row("Current colors", "", Some(swatches.upcast_ref())));
 
     let (glow, _) = widgets::switch_row("Glow", "A soft light around selected and focused items.", p.glow, |on| {
         prefs::update(|p| p.glow = on);
@@ -340,7 +336,7 @@ fn editing_group() -> widgets::Group {
 }
 
 fn shortcuts_group() -> widgets::Group {
-    let group = widgets::group("Keyboard shortcuts", "Press ? anywhere in the gallery to see these.");
+    let group = widgets::group("Keyboard shortcuts", "Press F1 anywhere in the gallery to see these.");
     for (_, keys) in SHORTCUTS {
         for (title, combo) in *keys {
             group.add(&widgets::row(title, "", Some(keys_widget(combo).upcast_ref())));

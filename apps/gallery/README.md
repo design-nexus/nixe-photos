@@ -13,11 +13,11 @@ Omarchy theme live, groups photos on a timeline, and shows EXIF details in a sid
 - **Toolbar:** Favorite, Edit, Rotate, Move to trash and an Album menu act on the selected photos; the ⋯ menu has the rest (copy, rename, export, set as background, slideshow, reveal, select all, rescan). In a narrow window they all move into ⋯.
 - **Albums:** create albums with + in the sidebar; right-click one there to rename it, play it as a slideshow, export it or delete it (deleting keeps the photos, and can be undone). Add one photo or a whole selection to an album (or a new one) from the toolbar or the right-click menu. The photo info lists the albums a photo is in.
 - **Search:** file name, folder, camera, lens or format, plus dates (`2024`, `2023-2024`, `2024-05`, `before:2024`, `after:2023-06`, `today`, `last week`, `this month`, `last year`) and kinds (`is:favorite`, `is:video`, `is:screenshot`, `is:photo`).
-- **Viewer:** full-size view with zoom, pan, a filmstrip of nearby photos, and next/previous with the arrow keys. Neighbouring photos load ahead. The controls fade while the pointer rests. <kbd>S</kbd> starts a slideshow.
+- **Viewer:** full-size view with zoom, pan, a filmstrip of nearby photos, and next/previous with the arrow keys. Neighboring photos load ahead. The controls fade while the pointer rests. <kbd>S</kbd> starts a slideshow.
 - **Rotation:** <kbd>R</kbd> turns the view and remembers it; <kbd>Ctrl</kbd>+<kbd>S</kbd> or "Save to file" writes it into the photo (backing up the original first if Settings says so).
 - **Files:** move to the trash with <kbd>Delete</kbd> (Undo in the message puts it back), rename with <kbd>F2</kbd>, copy the image with <kbd>Ctrl</kbd>+<kbd>C</kbd>, drag photos out to other apps, set one as the Omarchy background, and export a selection as smaller copies or in another format.
 - **Videos:** show their length, and play silently while the pointer rests on them.
-- **Nexus Photo Viewer:** `npv FILE` opens one photo (and its folder) in a light window, with the same controls as the gallery's viewer — favorite, rotate and save the rotation, slideshow, copy, set as background, rename, trash with undo — plus Open in gallery and Edit in gallery. Favourites and rotations are shared with the gallery. Settings → Opening photos makes a double-click use it.
+- **Nexus Photo Viewer:** `npv FILE` opens one photo (and its folder) in a light window, with the same controls as the gallery's viewer — favorite, rotate and save the rotation, slideshow, copy, set as background, rename, trash with undo — plus Open in gallery and Edit in gallery. Favorites and rotations are shared with the gallery. Settings → Opening photos makes a double-click use it.
 - **Editing:** rotate, flip, crop (free or fixed ratio), resize, brightness, contrast, saturation, Mono and Sepia filters, and markup (pen, highlighter, arrow, rectangle, ellipse, text and blur). Edits can be undone and redone, copied to the clipboard, and saved as a copy or over the original.
 - **Photo info:** file details, a brightness histogram, camera and lens settings, the location (with a map link) when the photo has one, the folder, and the albums it is in.
 - **Themes:** follows the current Omarchy theme as it changes, or pick one of 15 bundled themes or your own.
@@ -52,7 +52,7 @@ HEIC and AVIF photos need a gdk-pixbuf loader for them (glycin, or libheif's loa
 
 ## Keyboard shortcuts
 
-Press <kbd>?</kbd> in the app to see them all.
+Press <kbd>F1</kbd> (or <kbd>?</kbd>) in the app to see them all.
 
 | Keys | Action |
 | :--- | :--- |
@@ -77,5 +77,5 @@ Press <kbd>?</kbd> in the app to see them all.
 | <kbd>W</kbd> | Viewer: set as the Omarchy background |
 | <kbd>Ctrl</kbd>+<kbd>S</kbd> | Viewer and gallery: save the rotation to the file. Editor: save |
 | <kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> | Editor: undo / redo |
-| <kbd>?</kbd> | Show the shortcuts |
+| <kbd>F1</kbd> or <kbd>?</kbd> | Show the shortcuts |
 | <kbd>Ctrl</kbd>+<kbd>Q</kbd> or <kbd>Ctrl</kbd>+<kbd>W</kbd> | Close |
