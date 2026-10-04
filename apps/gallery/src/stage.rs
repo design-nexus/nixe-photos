@@ -9,6 +9,46 @@ use std::rc::Rc;
 
 use crate::widgets::label;
 
+/// Full-size pictures decoded ahead (the photos either side of the one shown).
+const PRELOAD_KEEP: usize = 4;
+
+thread_local! {
+    /// (path, rotation) and the decoded picture, most recent last.
+    static FULL: std::cell::RefCell<Vec<((String, u32), gdk::Texture)>> = const { std::cell::RefCell::new(Vec::new()) };
+    static LOADING: std::cell::RefCell<std::collections::HashSet<(String, u32)>> = std::cell::RefCell::default();
+}
+
+fn cached_full(path: &str, rotation: u32) -> Option<gdk::Texture> {
+    FULL.with(|f| f.borrow().iter().find(|(k, _)| k.0 == path && k.1 == rotation).map(|(_, t)| t.clone()))
+}
+
+fn remember_full(path: &str, rotation: u32, tex: &gdk::Texture) {
+    FULL.with(|f| {
+        let mut f = f.borrow_mut();
+        f.retain(|(k, _)| !(k.0 == path && k.1 == rotation));
+        f.push(((path.to_string(), rotation), tex.clone()));
+        while f.len() > PRELOAD_KEEP {
+            f.remove(0);
+        }
+    });
+}
+
+/// Decode a photo in the background so showing it later is instant.
+pub fn preload(path: &str, rotation: u32) {
+    let key = (path.to_string(), rotation);
+    if cached_full(path, rotation).is_some() || LOADING.with(|l| !l.borrow_mut().insert(key.clone())) {
+        return;
+    }
+    glib::spawn_future_local(async move {
+        let p = key.0.clone();
+        let tex = gio::spawn_blocking(move || load_full(&p, rotation)).await.ok().flatten();
+        LOADING.with(|l| l.borrow_mut().remove(&key));
+        if let Some(tex) = tex {
+            remember_full(&key.0, rotation, &tex);
+        }
+    });
+}
+
 struct Inner {
     root: gtk::Overlay,
     stack: gtk::Stack,
@@ -110,10 +150,21 @@ impl Stage {
             i.loading.set_visible(false);
             return;
         };
+        if let Some(tex) = cached_full(path, rotation) {
+            i.loading.set_visible(false);
+            i.size.set((tex.width(), tex.height()));
+            self.set_paintable(Some(tex.upcast_ref()));
+            self.apply_scale();
+            return;
+        }
         i.loading.set_visible(true);
         let (path, me) = (path.to_string(), self.clone());
         glib::spawn_future_local(async move {
-            let tex = gio::spawn_blocking(move || load_full(&path, rotation)).await.ok().flatten();
+            let p = path.clone();
+            let tex = gio::spawn_blocking(move || load_full(&p, rotation)).await.ok().flatten();
+            if let Some(tex) = &tex {
+                remember_full(&path, rotation, tex);
+            }
             if me.0.token.get() != mine {
                 return;
             }

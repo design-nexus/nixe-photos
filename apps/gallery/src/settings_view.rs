@@ -8,10 +8,65 @@ use std::rc::Rc;
 const MAX_CONTENT_WIDTH: i32 = 920;
 
 pub struct Info {
-    pub library: String,
     pub items: usize,
     pub size: String,
     pub on_rescan: Rc<dyn Fn()>,
+    /// Called after the library folders changed in the settings.
+    pub on_folders: Rc<dyn Fn()>,
+    /// Called after the thumbnail layout changed.
+    pub on_layout: Rc<dyn Fn()>,
+}
+
+/// Every shortcut, by where it works. Shown in Settings and with `?`.
+pub const SHORTCUTS: &[(&str, &[(&str, &str)])] = &[
+    (
+        "Gallery",
+        &[
+            ("Move between photos", "←, →, ↑, ↓"),
+            ("Select a range", "Shift+←, Shift+→"),
+            ("First and last photo", "Home, End"),
+            ("A page up or down", "PgUp, PgDn"),
+            ("Open in the viewer", "Space"),
+            ("Favorite", "F"),
+            ("Edit", "E"),
+            ("Rotate the view", "R"),
+            ("Rename", "F2"),
+            ("Move to the trash", "Delete"),
+            ("Copy the image", "Ctrl+C"),
+            ("Show or hide the photo info", "I"),
+            ("Select every photo", "Ctrl+A"),
+            ("Bigger or smaller thumbnails", "Ctrl++, Ctrl+−"),
+            ("Search", "Ctrl+F"),
+            ("Collapse the sidebar", "Ctrl+B"),
+            ("Reveal in the file manager", "Ctrl+O"),
+            ("Show these shortcuts", "?"),
+        ],
+    ),
+    (
+        "Viewer",
+        &[
+            ("Previous and next photo", "←, →"),
+            ("Zoom in, out, fit, 100%", "+, −, 0, 1"),
+            ("Slideshow", "S"),
+            ("Save the rotation to the file", "Ctrl+S"),
+            ("Set as the background", "W"),
+            ("Back to the gallery", "Esc"),
+        ],
+    ),
+    ("Window", &[("Close", "Ctrl+W")]),
+];
+
+/// Key caps for a shortcut: `Ctrl+A` joined with "+", `A, B` side by side.
+pub fn keys_widget(keys: &str) -> gtk::Box {
+    if keys.contains(", ") {
+        let b = hbox(4);
+        for k in keys.split(", ") {
+            b.append(&widgets::key_combo(k));
+        }
+        b
+    } else {
+        widgets::key_combo(keys)
+    }
 }
 
 pub fn build(info: Info) -> (gtk::ScrolledWindow, gtk::Box) {
@@ -23,8 +78,10 @@ pub fn build(info: Info) -> (gtk::ScrolledWindow, gtk::Box) {
     actions.append(&widgets::open_config_button(&[paths::prefs_file()]));
     body.append(&header);
 
+    let on_layout = info.on_layout.clone();
     body.append(&window_group().wrapper);
     body.append(&library_group(info).wrapper);
+    body.append(&viewing_group(on_layout).wrapper);
     body.append(&opening_group().wrapper);
     body.append(&editing_group().wrapper);
     body.append(&shortcuts_group().wrapper);
@@ -127,40 +184,110 @@ fn refresh_swatches(row: &gtk::Box) {
 }
 
 fn library_group(info: Info) -> widgets::Group {
-    let group = widgets::group("Library", "");
-    let path = gtk::Label::new(Some(&info.library));
-    path.add_css_class("mono");
-    path.add_css_class("dim");
-    path.set_ellipsize(gtk::pango::EllipsizeMode::Start);
-    path.set_xalign(1.0);
-    path.set_max_width_chars(36);
-    group.add(&widgets::row(
-        "Photo folder",
-        "Where photos and videos are looked for, including subfolders.",
-        Some(path.upcast_ref()),
-    ));
+    let group = widgets::group("Library", "Photos and videos are looked for in these folders and their subfolders.");
+    let folders = vbox(0);
+    folders.add_css_class("plain-list");
+    fill_folders(&folders, info.on_folders.clone());
+    group.add(&folders);
+
+    let add = gtk::Button::new();
+    add.set_child(Some(&widgets::button_content("list-add-symbolic", "Add folder")));
+    let (list, changed) = (folders.clone(), info.on_folders.clone());
+    add.connect_clicked(move |_| {
+        let (list, changed) = (list.clone(), changed.clone());
+        crate::dialog::choose_folder("Add a library folder", Some(&crate::paths::home()), move |path| {
+            let text = paths::pretty(&path);
+            prefs::update(|p| {
+                if p.folders.is_empty() {
+                    // Keep the Pictures folder that was in use until now.
+                    p.folders.push(paths::pretty(&crate::library::default_root()));
+                }
+                if !p.folders.contains(&text) {
+                    p.folders.push(text.clone());
+                }
+            });
+            fill_folders(&list, changed.clone());
+            changed();
+        });
+    });
+    group.add(&widgets::row("Add a folder", "Downloads, a camera card, a synced folder…", Some(add.upcast_ref())));
+
     let rescan = gtk::Button::new();
     rescan.set_child(Some(&widgets::button_content("view-refresh-symbolic", "Rescan")));
     let on_rescan = info.on_rescan;
     rescan.connect_clicked(move |_| on_rescan());
-    let desc = format!("{} items, {}", info.items, info.size);
-    group.add(&widgets::row("Scan the folder again", &desc, Some(rescan.upcast_ref())));
+    let desc = format!("{} items, {}. New and deleted files are noticed by themselves.", info.items, info.size);
+    group.add(&widgets::row("Scan the folders again", &desc, Some(rescan.upcast_ref())));
+    group
+}
+
+/// One row per library folder, each with a remove button (not for the last one).
+fn fill_folders(list: &gtk::Box, changed: Rc<dyn Fn()>) {
+    while let Some(c) = list.first_child() {
+        list.remove(&c);
+    }
+    let roots = crate::library::configured_roots(&prefs::get().folders);
+    let single = roots.len() == 1;
+    for root in roots {
+        let text = paths::pretty(&root);
+        let remove = widgets::icon_button("list-remove-symbolic", "Stop looking in this folder");
+        remove.set_sensitive(!single);
+        let missing = if root.is_dir() { "" } else { "This folder doesn't exist." };
+        let row = widgets::row(&text, missing, Some(remove.upcast_ref()));
+        row.add_css_class("mono-title");
+        let (l, c) = (list.clone(), changed.clone());
+        remove.connect_clicked(move |_| {
+            prefs::update(|p| {
+                if p.folders.is_empty() {
+                    p.folders.push(paths::pretty(&crate::library::default_root()));
+                }
+                p.folders.retain(|f| *f != text);
+            });
+            fill_folders(&l, c.clone());
+            c();
+        });
+        list.append(&row);
+    }
+}
+
+fn viewing_group(on_layout: Rc<dyn Fn()>) -> widgets::Group {
+    let group = widgets::group("Gallery and viewer", "");
+    let p = prefs::get();
+    let (layout, _) = widgets::choice_row(
+        "Thumbnails",
+        "Squares line up neatly; keeping the shape shows each photo whole.",
+        vec![("square".into(), "Squares".into()), ("justified".into(), "Keep each photo's shape".into())],
+        &p.layout,
+        move |l| {
+            prefs::update(|p| p.layout = l);
+            on_layout();
+        },
+    );
+    group.add(&layout);
+    let (slides, _) = widgets::choice_row(
+        "Slideshow speed",
+        "How long each photo shows for. Press S in the viewer.",
+        [2, 4, 6, 10, 20].iter().map(|n| (n.to_string(), format!("{n} seconds"))).collect(),
+        &p.slideshow_seconds.to_string(),
+        |v| prefs::update(|p| p.slideshow_seconds = v.parse().unwrap_or(4)),
+    );
+    group.add(&slides);
     group
 }
 
 fn opening_group() -> widgets::Group {
     let group = widgets::group("Opening photos", "What a double-click or Enter on a photo opens.");
-    let installed = cmd::present("nexus-photos-viewer");
+    let installed = cmd::present("npv");
     let desc = if installed {
-        "The stand-alone viewer opens in its own light window, with buttons to bring the photo back here."
+        "Nexus Photo Viewer (npv) opens the photo in its own light window, with buttons to bring it back here."
     } else {
-        "The stand-alone viewer (nexus-photos-viewer) isn't installed, so photos open in the built-in viewer."
+        "Nexus Photo Viewer (npv) isn't installed, so photos open in the built-in viewer."
     };
     let current = if installed { prefs::get().open_with } else { "builtin".into() };
     let (row, _) = widgets::choice_row(
         "Open photos in",
         desc,
-        vec![("builtin".into(), "Built-in viewer".into()), ("viewer".into(), "Standalone viewer".into())],
+        vec![("builtin".into(), "Built-in viewer".into()), ("viewer".into(), "Nexus Photo Viewer".into())],
         &current,
         |with| prefs::update(|p| p.open_with = with),
     );
@@ -213,31 +340,11 @@ fn editing_group() -> widgets::Group {
 }
 
 fn shortcuts_group() -> widgets::Group {
-    let group = widgets::group("Keyboard shortcuts", "");
-    for (title, keys) in [
-        ("Move between photos", "←, →, ↑, ↓"),
-        ("Open in the viewer", "Space"),
-        ("Favorite", "F"),
-        ("Edit", "E"),
-        ("Rotate the view", "R"),
-        ("Show or hide the photo info", "I"),
-        ("Select every photo", "Ctrl+A"),
-        ("Search", "Ctrl+F"),
-        ("Collapse the sidebar", "Ctrl+B"),
-        ("Reveal in the file manager", "Ctrl+O"),
-        ("Zoom in the viewer", "+, −, 0"),
-        ("Close", "Ctrl+W"),
-    ] {
-        let combo = if keys.contains(", ") {
-            let b = hbox(4);
-            for k in keys.split(", ") {
-                b.append(&widgets::key_cap(k));
-            }
-            b
-        } else {
-            widgets::key_combo(keys)
-        };
-        group.add(&widgets::row(title, "", Some(combo.upcast_ref())));
+    let group = widgets::group("Keyboard shortcuts", "Press ? anywhere in the gallery to see these.");
+    for (_, keys) in SHORTCUTS {
+        for (title, combo) in *keys {
+            group.add(&widgets::row(title, "", Some(keys_widget(combo).upcast_ref())));
+        }
     }
     group
 }

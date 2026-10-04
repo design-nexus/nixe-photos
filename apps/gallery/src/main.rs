@@ -6,13 +6,15 @@ use nexus_photos::{library, window};
 
 const APP_ID: &str = "io.github.nexus.photos";
 
-const USAGE: &str = "Usage: nexus-photos [--section ID] [--edit] [FILE]\n\
-\n\
-  FILE          open this photo or video (its folder is shown alongside it)\n\
-  --edit        with FILE, open it straight in the editor\n\
-  --section ID  open a page: all_photos, favorites, recent, photos, screenshots, videos, settings\n\
-  -h, --help    show this help\n\
-  -V, --version print the version\n";
+const USAGE: &str = "Usage: nexus-photos [--section ID] [--edit] [FILE]
+
+  FILE          open this photo or video (its folder is shown if it isn't in the library)
+  --edit        with FILE, open it straight in the editor
+  --section ID  open a page: all_photos, favorites, recent, folders, duplicates,
+                photos, screenshots, videos, settings
+  -h, --help    show this help
+  -V, --version print the version
+";
 
 fn main() -> glib::ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();

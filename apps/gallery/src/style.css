@@ -913,7 +913,61 @@ window.photos-window button.action-button.danger {
 }
 
 .lightbox-bar {
-  padding: 12px 16px;
+  padding: 12px 16px 28px;
+  background: linear-gradient(to bottom, alpha(mix(@theme_bg, @theme_shadow, 0.7), 0.92), alpha(mix(@theme_bg, @theme_shadow, 0.7), 0));
+  transition: opacity 250ms ease-out;
+}
+
+/* The viewer's controls fade while the pointer rests. */
+.lightbox.idle .lightbox-bar,
+.lightbox.idle button.lightbox-nav,
+.lightbox.idle .filmstrip,
+.lightbox.idle .rotation-note {
+  opacity: 0;
+}
+
+window.photos-window .lightbox button.lightbox-nav,
+.filmstrip,
+.rotation-note {
+  transition: opacity 250ms ease-out;
+}
+
+.rotation-note {
+  padding: 6px 6px 6px 14px;
+  border-radius: 999px;
+  background: alpha(@theme_surface, 0.92);
+  border: 1px solid alpha(@theme_border, 0.7);
+  box-shadow: 0 4px 16px alpha(@theme_shadow, 0.4);
+}
+
+.filmstrip {
+  margin: 0 16px 16px;
+  padding: 6px;
+  border-radius: 12px;
+  background: alpha(@theme_surface, 0.82);
+}
+
+window.photos-window button.strip-item {
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background: transparent;
+  opacity: 0.6;
+}
+
+window.photos-window button.strip-item image {
+  margin: 2px;
+}
+
+window.photos-window button.strip-item:hover {
+  opacity: 1;
+}
+
+window.photos-window button.strip-item.current {
+  opacity: 1;
+  border-color: @theme_accent;
 }
 
 .lightbox-title {
@@ -1051,4 +1105,116 @@ window.photos-window menubutton.icon-button > button {
 
 window.photos-window menubutton.icon-button > button:hover {
   background: alpha(@theme_highlight, 0.55);
+}
+
+/* ---------- Thumbnails fade in ---------- */
+
+.photo-cell > picture {
+  opacity: 0;
+  transition: opacity 180ms ease-out;
+}
+
+.photo-cell > picture.loaded {
+  opacity: 1;
+}
+
+.photo-cell > picture.instant {
+  transition: none;
+}
+
+/* ---------- Date scrubber ---------- */
+
+.scrubber {
+  margin: 8px 0;
+  border-radius: 8px 0 0 8px;
+  transition: background 150ms ease-out;
+}
+
+.scrubber.hover {
+  background: alpha(@theme_bg, 0.88);
+  box-shadow: -4px 0 12px alpha(@theme_shadow, 0.25);
+}
+
+.scrub-bubble {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.9em;
+  color: @theme_on_accent;
+  background: @theme_accent;
+  box-shadow: 0 2px 10px alpha(@theme_shadow, 0.4);
+}
+
+/* ---------- Toasts, photo info, dialogs ---------- */
+
+window.photos-window button.toast-action {
+  min-height: 0;
+  padding: 2px 10px;
+  margin: -4px -6px -4px 0;
+  color: @theme_accent;
+  font-weight: 700;
+  background: alpha(@theme_accent, 0.12);
+  border-color: transparent;
+}
+
+.histogram {
+  margin-top: 10px;
+  border-radius: 6px;
+  background: alpha(@theme_muted, 0.18);
+}
+
+window.photos-window button.folder-link {
+  margin-top: 8px;
+  padding: 4px 8px;
+  font-size: 0.88em;
+  color: @theme_dim_text;
+}
+
+window.photos-window button.folder-link:hover {
+  color: @theme_accent;
+}
+
+.map-link {
+  margin-top: 6px;
+}
+
+.shortcut-heading {
+  margin: 14px 0 4px;
+}
+
+.mono-title .settings-option-title {
+  font-family: monospace;
+}
+
+/* ---------- Selection toolbar ---------- */
+
+.selection-chip {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.9em;
+  color: @theme_accent;
+  background: alpha(@theme_accent, 0.14);
+}
+
+.quick-actions {
+  padding: 0 6px;
+  margin: 0 2px;
+  border-left: 1px solid alpha(@theme_border, 0.6);
+  border-right: 1px solid alpha(@theme_border, 0.6);
+}
+
+window.photos-window button.icon-button.on {
+  color: @theme_accent;
+}
+
+window.photos-window button.icon-button.danger:hover {
+  color: @theme_danger;
+  background: alpha(@theme_danger, 0.12);
+}
+
+.album-row {
+  padding: 2px 2px 2px 10px;
+  border-radius: 6px;
+  background: alpha(@theme_muted, 0.18);
 }

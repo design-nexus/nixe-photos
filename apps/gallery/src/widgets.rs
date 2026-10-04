@@ -303,3 +303,6 @@ pub fn paint(widget: &impl IsA<gtk::Widget>, css_colour: &str) {
     #[allow(deprecated)]
     widget.style_context().add_provider(&provider, gtk::STYLE_PROVIDER_PRIORITY_USER);
 }
+
+/// A button's label and what it does, for messages that may offer one.
+pub type ButtonAction<'a> = (&'a str, Rc<dyn Fn()>);

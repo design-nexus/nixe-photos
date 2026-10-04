@@ -53,6 +53,16 @@ pub fn favorites_file() -> PathBuf {
     data_dir().join("favorites.json")
 }
 
+/// Quarter turns the viewer shows photos with.
+pub fn rotations_file() -> PathBuf {
+    data_dir().join("rotations.json")
+}
+
+/// What the last scan found, so the next start shows it at once.
+pub fn library_cache() -> PathBuf {
+    cache_home().join("nexus-photos/library.json")
+}
+
 /// Originals kept before an edit replaced them.
 pub fn backup_dir() -> PathBuf {
     data_dir().join("backups")
@@ -64,6 +74,15 @@ pub fn thumbnail_dir() -> PathBuf {
 
 pub fn omarchy_colors() -> PathBuf {
     state_home().join("omarchy/current/theme/colors.toml")
+}
+
+/// A saved folder: `~/…` is under the home folder.
+pub fn expand(text: &str) -> PathBuf {
+    match text.strip_prefix("~/") {
+        Some(rest) => home().join(rest),
+        None if text == "~" => home(),
+        None => PathBuf::from(text),
+    }
 }
 
 /// Replace `$HOME` with `~` for display.

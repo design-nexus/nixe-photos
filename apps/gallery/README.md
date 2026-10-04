@@ -5,14 +5,21 @@ Omarchy theme live, groups photos on a timeline, and shows EXIF details in a sid
 
 ## Features
 
-- **Timeline:** group by years, months or days, or show everything in one grid. A slider sets the thumbnail size.
-- **Sections:** all photos, favorites, recently added, and photos, screenshots and videos by type.
-- **Albums:** create, rename and delete albums, and add one photo or a whole selection to them.
-- **Search:** filter the current view by file name, camera, lens, date or format.
-- **Standalone viewer:** `nexus-photos-viewer FILE` opens one photo in a light window with Open in gallery, Edit in gallery, Rotate and Reveal buttons. Settings → Opening photos makes a double-click use it.
-- **Viewer:** full-size view with zoom, pan, 90° rotation (display only), and next/previous with the arrow keys.
+- **Timeline:** group by years, months or days, or show everything in one grid. Photos are dated by when they were taken (EXIF), else by the file's date.
+- **Thumbnails:** squares, or rows that keep each photo's shape (Settings → Gallery and viewer). A slider, <kbd>Ctrl</kbd>+wheel or <kbd>Ctrl</kbd>+<kbd>+</kbd>/<kbd>−</kbd> sets their size.
+- **Date scrubber:** the right edge shows where you are; hover it for the years and drag it to jump.
+- **Sections:** all photos, favorites, recently added (last 30 days), folders, possible duplicates, and photos, screenshots and videos by type.
+- **Library folders:** look in any number of folders (Settings → Library). New, changed and deleted files show up by themselves. What a scan found is remembered, so the grid fills at once on the next start.
+- **Toolbar:** Favorite, Edit, Rotate, Move to trash and an Album menu act on the selected photos; the ⋯ menu has the rest (copy, rename, export, set as background, slideshow, reveal, select all, rescan). In a narrow window they all move into ⋯.
+- **Albums:** create albums with + in the sidebar; right-click one there to rename it, play it as a slideshow, export it or delete it (deleting keeps the photos, and can be undone). Add one photo or a whole selection to an album (or a new one) from the toolbar or the right-click menu. The photo info lists the albums a photo is in.
+- **Search:** file name, folder, camera, lens or format, plus dates (`2024`, `2023-2024`, `2024-05`, `before:2024`, `after:2023-06`, `today`, `last week`, `this month`, `last year`) and kinds (`is:favorite`, `is:video`, `is:screenshot`, `is:photo`).
+- **Viewer:** full-size view with zoom, pan, a filmstrip of nearby photos, and next/previous with the arrow keys. Neighbouring photos load ahead. The controls fade while the pointer rests. <kbd>S</kbd> starts a slideshow.
+- **Rotation:** <kbd>R</kbd> turns the view and remembers it; <kbd>Ctrl</kbd>+<kbd>S</kbd> or "Save to file" writes it into the photo (backing up the original first if Settings says so).
+- **Files:** move to the trash with <kbd>Delete</kbd> (Undo in the message puts it back), rename with <kbd>F2</kbd>, copy the image with <kbd>Ctrl</kbd>+<kbd>C</kbd>, drag photos out to other apps, set one as the Omarchy background, and export a selection as smaller copies or in another format.
+- **Videos:** show their length, and play silently while the pointer rests on them.
+- **Nexus Photo Viewer:** `npv FILE` opens one photo (and its folder) in a light window, with the same controls as the gallery's viewer — favorite, rotate and save the rotation, slideshow, copy, set as background, rename, trash with undo — plus Open in gallery and Edit in gallery. Favourites and rotations are shared with the gallery. Settings → Opening photos makes a double-click use it.
 - **Editing:** rotate, flip, crop (free or fixed ratio), resize, brightness, contrast, saturation, Mono and Sepia filters, and markup (pen, highlighter, arrow, rectangle, ellipse, text and blur). Edits can be undone and redone, copied to the clipboard, and saved as a copy or over the original.
-- **Photo info:** file details, camera and lens settings, and actions in a drawer.
+- **Photo info:** file details, a brightness histogram, camera and lens settings, the location (with a map link) when the photo has one, the folder, and the albums it is in.
 - **Themes:** follows the current Omarchy theme as it changes, or pick one of 15 bundled themes or your own.
 - **Narrow windows:** the sidebar collapses to icons when the window is narrow, so it fits tiled at half a screen.
 
@@ -31,66 +38,44 @@ Thumbnails for videos need `ffmpegthumbnailer` or `ffmpeg`.
 
 ```bash
 nexus-photos                      # open the library (~/Pictures)
-nexus-photos photo.jpg            # open a file in the viewer, with its folder as the library
+nexus-photos photo.jpg            # open a file in the viewer (its folder is shown if it isn't in the library)
+npv photo.jpg                     # open a file in Nexus Photo Viewer (npv alone offers to open one)
 nexus-photos --edit photo.jpg     # open a file straight in the editor
-nexus-photos --section settings   # open a page: all_photos, favorites, recent, photos, screenshots, videos, settings
+nexus-photos --section settings   # open a page: all_photos, favorites, recent, folders, duplicates, photos, screenshots, videos, settings
 ```
 
 Launching it again focuses the open window. The photo info panel (<kbd>I</kbd>) is closed until you open it, and it remembers. Photos and videos are looked for in `~/Pictures`
-and its subfolders.
+and its subfolders until other folders are chosen in Settings; hidden folders are skipped. A file
+outside the library folders opens with its own folder shown instead.
+
+HEIC and AVIF photos need a gdk-pixbuf loader for them (glycin, or libheif's loader).
 
 ## Keyboard shortcuts
 
+Press <kbd>?</kbd> in the app to see them all.
+
 | Keys | Action |
 | :--- | :--- |
-| <kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd> | Move between photos |
+| <kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd> | Move between photos (with <kbd>Shift</kbd>: select a range) |
+| <kbd>Home</kbd> <kbd>End</kbd> <kbd>PgUp</kbd> <kbd>PgDn</kbd> | First, last, a page up or down |
 | <kbd>Space</kbd> or <kbd>Enter</kbd> | Open the viewer |
 | <kbd>Esc</kbd> | Close the viewer, clear the search, or deselect |
 | <kbd>F</kbd> or <kbd>.</kbd> | Favorite |
 | <kbd>E</kbd> | Edit the photo |
-| <kbd>R</kbd> | Rotate the view 90° (not saved) |
+| <kbd>R</kbd> | Rotate the view 90° |
+| <kbd>F2</kbd> | Rename |
+| <kbd>Delete</kbd> | Move to the trash |
+| <kbd>Ctrl</kbd>+<kbd>C</kbd> | Copy the image (or the selected files) |
 | <kbd>I</kbd> | Show or hide the photo info |
 | <kbd>Ctrl</kbd>+<kbd>A</kbd> | Select every photo |
+| <kbd>Ctrl</kbd>+<kbd>+</kbd> / <kbd>Ctrl</kbd>+<kbd>−</kbd> | Bigger or smaller thumbnails |
 | <kbd>Ctrl</kbd>+<kbd>F</kbd> or <kbd>Ctrl</kbd>+<kbd>K</kbd> | Search |
 | <kbd>Ctrl</kbd>+<kbd>B</kbd> | Collapse or expand the sidebar |
 | <kbd>Ctrl</kbd>+<kbd>O</kbd> | Reveal in the file manager |
 | <kbd>+</kbd> <kbd>-</kbd> <kbd>0</kbd> <kbd>1</kbd> | Viewer: zoom in, zoom out, fit, 100% |
+| <kbd>S</kbd> | Viewer: start or stop the slideshow |
+| <kbd>W</kbd> | Viewer: set as the Omarchy background |
+| <kbd>Ctrl</kbd>+<kbd>S</kbd> | Viewer and gallery: save the rotation to the file. Editor: save |
 | <kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> | Editor: undo / redo |
-| <kbd>Ctrl</kbd>+<kbd>S</kbd> | Editor: save |
+| <kbd>?</kbd> | Show the shortcuts |
 | <kbd>Ctrl</kbd>+<kbd>Q</kbd> or <kbd>Ctrl</kbd>+<kbd>W</kbd> | Close |
-
-Click selects, <kbd>Ctrl</kbd>+click adds to the selection, <kbd>Shift</kbd>+click selects a range, and a double click opens the viewer. Right-click a photo for a menu: open, edit, rotate, favorite, add to an album, copy path, reveal, and Delete (click twice), which moves the photo to the trash and removes it from the library.
-
-## Editing
-
-Press <kbd>E</kbd> on a photo (or use the pencil in the viewer) to open the editor. JPG, PNG and WebP can be edited.
-
-- **Adjust:** rotate and flip, crop with a box you drag, resize by pixels or percent, and light and colour sliders.
-- **Markup:** pick a tool, a colour and a size, then drag on the picture. Click with the Text tool to type. Blur hides what is underneath. Once there is markup, rotate, crop and resize are locked until it is removed.
-- **Saving:** *Save a copy* writes `name edited.ext` next to the original and leaves it untouched. *Replace original* writes over the file after you click twice, and keeps the original in `~/.local/share/nexus-photos/backups/`. Settings picks which one the Save button does.
-- JPEG is saved at the quality set in Settings; PNG is lossless; WebP is saved lossless, so it can be larger.
-- Saved pictures don't keep camera EXIF data.
-
-## Settings and files
-
-Open the Settings page (bottom of the sidebar) to choose a theme, turn Glow and Reduce motion on or off, set how the editor saves, and rescan the library.
-
-| What | Where |
-| :--- | :--- |
-| Preferences | `~/.config/nexus-photos/settings.toml` |
-| Your themes | `~/.config/nexus-photos/themes/<name>.toml` |
-| Albums and favorites | `~/.local/share/nexus-photos/` |
-| Backups of replaced originals | `~/.local/share/nexus-photos/backups/` |
-| Thumbnail cache | `~/.cache/nexus-photos/thumbnails/` |
-
-A theme file has a `name` and the colours `bg`, `surface`, `text`, `dim_text`, `accent`, `border`, `muted`,
-`highlight`, `danger`, `glow` and `shadow` as `#rrggbb` values, plus `light = true` for a light theme.
-
-## Build
-
-```bash
-cargo build --release
-cargo test
-```
-
-Requires Rust and GTK 4 development files.

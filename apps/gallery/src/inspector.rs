@@ -1,4 +1,5 @@
-//! The photo info drawer: a preview, file and camera details, and actions.
+//! The photo info drawer: a preview, file and camera details, the location and the
+//! albums the photo is in. What to do with a photo is in the toolbar, not here.
 
 use crate::models::PhotoItem;
 use crate::widgets::{self, hbox, label, vbox};
@@ -15,23 +16,19 @@ type Handler = Rc<dyn Fn(Action)>;
 pub enum Action {
     Close,
     Open,
-    Edit,
-    Rotate,
-    CopyPath,
     Reveal,
-    ToggleFavorite,
-    AddToAlbum(String),
-    RemoveFromAlbum,
+    /// Take the photo out of this album.
+    RemoveFromAlbum(String),
 }
 
 /// Everything the drawer needs to draw itself.
 pub struct View {
     pub photo: Option<PhotoItem>,
     pub selected: usize,
+    /// The albums the photo is in: (id, name).
     pub albums: Vec<(String, String)>,
-    /// The id of the album being viewed, if any.
-    pub in_album: bool,
-    pub rotation: u32,
+    /// The thumbnail, for the preview's histogram.
+    pub cell: Option<crate::grid::CellData>,
 }
 
 #[derive(Clone)]
@@ -120,14 +117,55 @@ impl Inspector {
             self.body.append(&t);
         }
 
+        if let Some(cell) = &view.cell
+            && !photo.is_video()
+        {
+            self.body.append(&histogram(cell));
+        }
+
         self.body.append(&label("Details", "group-title"));
         let dims = if photo.width > 0 { format!("{} × {}", photo.width, photo.height) } else { "Unknown".into() };
-        self.body.append(&details(&[
+        let mut rows = vec![
             ("Dimensions", dims),
             ("Size", photo.file_size_formatted.clone()),
             ("Format", photo.format.clone()),
             ("Date", photo.date_display.clone()),
-        ]));
+        ];
+        if let Some(d) = photo.duration {
+            rows.push(("Length", crate::models::format_duration(d)));
+        }
+        self.body.append(&details(&rows));
+
+        // The folder, as a link that opens it.
+        let folder = crate::paths::pretty(std::path::Path::new(photo.folder()));
+        let link = gtk::Button::with_label(&folder);
+        link.add_css_class("flat");
+        link.add_css_class("folder-link");
+        link.set_tooltip_text(Some("Show in the file manager (Ctrl+O)"));
+        if let Some(l) = link.child().and_downcast::<gtk::Label>() {
+            l.set_ellipsize(pango::EllipsizeMode::Start);
+            l.set_xalign(0.0);
+        }
+        let me = self.clone();
+        link.connect_clicked(move |_| me.emit(Action::Reveal));
+        self.body.append(&link);
+
+        if let (Some(lat), Some(lon)) = (photo.latitude, photo.longitude) {
+            self.body.append(&label("Location", "group-title"));
+            let text = format!(
+                "{:.5}° {}, {:.5}° {}",
+                lat.abs(),
+                if lat < 0.0 { "S" } else { "N" },
+                lon.abs(),
+                if lon < 0.0 { "W" } else { "E" }
+            );
+            self.body.append(&details(&[("Position", text)]));
+            let url = format!("https://www.openstreetmap.org/?mlat={lat:.6}&mlon={lon:.6}#map=15/{lat:.6}/{lon:.6}");
+            let map = gtk::LinkButton::with_label(&url, "Open in OpenStreetMap");
+            map.set_halign(gtk::Align::Start);
+            map.add_css_class("map-link");
+            self.body.append(&map);
+        }
 
         let device = match (&photo.camera_make, &photo.camera_model) {
             (Some(m), Some(model)) if model.contains(m.as_str()) => Some(model.clone()),
@@ -152,70 +190,68 @@ impl Inspector {
             self.body.append(&details(&camera));
         }
 
-        self.body.append(&label("Actions", "group-title"));
-        let actions = vbox(4);
-        actions.append(&self.action_button("document-edit-symbolic", "Edit photo", "E", Action::Edit));
-        let fav = if photo.is_favorite { "Remove from favorites" } else { "Add to favorites" };
-        let icon = if photo.is_favorite { "starred-symbolic" } else { "non-starred-symbolic" };
-        actions.append(&self.action_button(icon, fav, "F", Action::ToggleFavorite));
-        let rot = if view.rotation == 0 { "Rotate".to_string() } else { format!("Rotate ({}°)", view.rotation) };
-        actions.append(&self.action_button("object-rotate-right-symbolic", &rot, "R", Action::Rotate));
-        actions.append(&self.action_button("edit-copy-symbolic", "Copy path", "", Action::CopyPath));
-        let reveal = self.action_button("folder-open-symbolic", "Reveal in file manager", "", Action::Reveal);
-        reveal.set_tooltip_text(Some("Ctrl+O"));
-        actions.append(&reveal);
-        self.body.append(&actions);
-
         if !view.albums.is_empty() {
-            self.body.append(&label("Add to album", "group-title"));
-            let flow = gtk::FlowBox::new();
-            flow.set_selection_mode(gtk::SelectionMode::None);
-            flow.set_min_children_per_line(1);
-            flow.set_max_children_per_line(3);
-            flow.set_row_spacing(4);
-            flow.set_column_spacing(4);
-            flow.set_homogeneous(false);
-            flow.add_css_class("album-chips");
+            self.body.append(&label("In albums", "group-title"));
+            let list = vbox(4);
             for (id, name) in &view.albums {
-                let b = gtk::Button::with_label(name);
-                b.add_css_class("chip");
-                if let Some(l) = b.child().and_downcast::<gtk::Label>() {
-                    l.set_ellipsize(pango::EllipsizeMode::End);
-                    l.set_max_width_chars(16);
-                }
+                let row = hbox(8);
+                row.add_css_class("album-row");
+                row.append(&gtk::Image::from_icon_name("folder-symbolic"));
+                let l = label(name, "");
+                l.set_hexpand(true);
+                l.set_ellipsize(pango::EllipsizeMode::End);
+                row.append(&l);
+                let remove = widgets::icon_button("list-remove-symbolic", "Take it out of this album");
                 let (me, id) = (self.clone(), id.clone());
-                b.connect_clicked(move |_| me.emit(Action::AddToAlbum(id.clone())));
-                flow.append(&b);
+                remove.connect_clicked(move |_| me.emit(Action::RemoveFromAlbum(id.clone())));
+                row.append(&remove);
+                list.append(&row);
             }
-            self.body.append(&flow);
-        }
-        if view.in_album {
-            let b = gtk::Button::with_label("Remove from this album");
-            b.set_margin_top(12);
-            let me = self.clone();
-            b.connect_clicked(move |_| me.emit(Action::RemoveFromAlbum));
-            self.body.append(&b);
+            self.body.append(&list);
         }
     }
+}
 
-    fn action_button(&self, icon: &str, text: &str, keys: &str, action: Action) -> gtk::Button {
-        let b = gtk::Button::new();
-        b.add_css_class("action-button");
-        let content = hbox(8);
-        content.append(&gtk::Image::from_icon_name(icon));
-        let l = gtk::Label::new(Some(text));
-        l.set_xalign(0.0);
-        l.set_hexpand(true);
-        l.set_ellipsize(pango::EllipsizeMode::End);
-        content.append(&l);
-        if !keys.is_empty() {
-            content.append(&widgets::key_combo(keys));
+/// How bright the photo is: a curve of how many pixels have each brightness, drawn
+/// from its thumbnail.
+fn histogram(cell: &crate::grid::CellData) -> gtk::DrawingArea {
+    let area = gtk::DrawingArea::new();
+    area.add_css_class("histogram");
+    area.set_content_height(56);
+    area.set_tooltip_text(Some("Brightness, dark to light"));
+    let bins: Rc<RefCell<Option<[f64; 64]>>> = Rc::default();
+    let b = bins.clone();
+    area.set_draw_func(move |area, cr, w, h| {
+        let Some(bins) = *b.borrow() else { return };
+        let peak = bins.iter().cloned().fold(0.0, f64::max).max(1e-9);
+        let fg = area.color();
+        let (w, h) = (w as f64, h as f64);
+        cr.move_to(0.0, h);
+        for (i, v) in bins.iter().enumerate() {
+            cr.line_to(i as f64 / 63.0 * w, h - (v / peak).sqrt() * (h - 2.0));
         }
-        b.set_child(Some(&content));
-        let me = self.clone();
-        b.connect_clicked(move |_| me.emit(action.clone()));
-        b
-    }
+        cr.line_to(w, h);
+        cr.close_path();
+        cr.set_source_rgba(fg.red() as f64, fg.green() as f64, fg.blue() as f64, 0.3);
+        let _ = cr.fill();
+    });
+    let a = area.clone();
+    crate::grid::thumbnail_texture(cell, move |tex| {
+        let mut downloader = gtk::gdk::TextureDownloader::new(&tex);
+        downloader.set_format(gtk::gdk::MemoryFormat::R8g8b8a8);
+        let (bytes, stride) = downloader.download_bytes();
+        let mut counts = [0f64; 64];
+        let (w, h) = (tex.width() as usize, tex.height() as usize);
+        for row in bytes.chunks(stride).take(h) {
+            for px in row[..w * 4].as_chunks::<4>().0 {
+                let y = 0.2126 * px[0] as f64 + 0.7152 * px[1] as f64 + 0.0722 * px[2] as f64;
+                counts[((y / 256.0) * 64.0) as usize] += 1.0;
+            }
+        }
+        *bins.borrow_mut() = Some(counts);
+        a.queue_draw();
+    });
+    area
 }
 
 /// Names and values in two aligned columns, in one rounded box.

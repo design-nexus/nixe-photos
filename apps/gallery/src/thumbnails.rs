@@ -1,8 +1,13 @@
-use image::ImageReader;
-use std::collections::hash_map::DefaultHasher;
+use crate::models::fnv1a;
+use image::{DynamicImage, ImageDecoder, ImageReader};
+use std::collections::HashSet;
 use std::fs;
-use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
+
+/// Longest side of a thumbnail, in pixels: sharp at the largest grid size on a 2× screen.
+pub const SIZE: u32 = 512;
+/// Part of every thumbnail's name; bump it to have them all made again.
+const VERSION: &str = "v2";
 
 pub fn get_cache_dir() -> PathBuf {
     let cache_dir = crate::paths::thumbnail_dir();
@@ -13,10 +18,8 @@ pub fn get_cache_dir() -> PathBuf {
 /// Where the thumbnail for `path` lives (or will live) in the cache. The name depends
 /// on the path and the modification time, so an edited photo gets a fresh one.
 pub fn cache_path(path: &Path, mtime: u64) -> PathBuf {
-    let mut hasher = DefaultHasher::new();
-    path.to_string_lossy().hash(&mut hasher);
-    mtime.hash(&mut hasher);
-    crate::paths::thumbnail_dir().join(format!("{:016x}.jpg", hasher.finish()))
+    let key = format!("{VERSION}\0{}\0{mtime}", path.to_string_lossy());
+    crate::paths::thumbnail_dir().join(format!("{:016x}.jpg", fnv1a(key.as_bytes())))
 }
 
 /// Make the thumbnail if it isn't cached yet, and return the file to show: the
@@ -30,70 +33,88 @@ pub fn generate_thumbnail(path: &Path, mtime: u64) -> String {
         return thumb_path.to_string_lossy().to_string();
     }
 
+    // Written under a hidden name and then renamed, so a thumbnail is never read half-made.
+    let tmp = thumb_path.with_file_name(format!(
+        ".{}-{}-{:?}.jpg",
+        thumb_path.file_stem().unwrap_or_default().to_string_lossy(),
+        std::process::id(),
+        std::thread::current().id()
+    ));
     let ext_lower = path.extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
-
-    // If it is a video, use ffmpegthumbnailer or ffmpeg
-    if crate::scanner::VIDEO_EXTENSIONS.contains(&ext_lower.as_str()) && generate_video_thumbnail(path, &thumb_path) {
+    let made = if crate::scanner::VIDEO_EXTENSIONS.contains(&ext_lower.as_str()) {
+        generate_video_thumbnail(path, &tmp)
+    } else {
+        upright(path)
+            .is_some_and(|img| img.thumbnail(SIZE, SIZE).to_rgb8().save_with_format(&tmp, image::ImageFormat::Jpeg).is_ok())
+            || pixbuf_thumbnail(path, &tmp)
+    };
+    if made && fs::rename(&tmp, &thumb_path).is_ok() {
         return thumb_path.to_string_lossy().to_string();
     }
-
-    // Try generating image thumbnail
-    if let Ok(reader) = ImageReader::open(path)
-        && let Ok(reader) = reader.with_guessed_format()
-        && let Ok(img) = reader.decode()
-    {
-        let thumb = img.thumbnail(360, 360);
-        if thumb.save(&thumb_path).is_ok() {
-            return thumb_path.to_string_lossy().to_string();
-        }
-    }
-
-    // Fallback to original image path
+    let _ = fs::remove_file(&tmp);
     path.to_string_lossy().to_string()
 }
 
+/// Decode with the image crate and turn the picture upright by its EXIF orientation.
+fn upright(path: &Path) -> Option<DynamicImage> {
+    let mut decoder = ImageReader::open(path).ok()?.with_guessed_format().ok()?.into_decoder().ok()?;
+    let orientation = decoder.orientation().unwrap_or(image::metadata::Orientation::NoTransforms);
+    let mut img = DynamicImage::from_decoder(decoder).ok()?;
+    img.apply_orientation(orientation);
+    Some(img)
+}
+
+/// For formats the image crate doesn't read (AVIF, HEIC, …): gdk-pixbuf's loaders.
+fn pixbuf_thumbnail(path: &Path, thumb_path: &Path) -> bool {
+    let Ok(pb) = gtk::gdk_pixbuf::Pixbuf::from_file_at_scale(path, SIZE as i32, SIZE as i32, true) else { return false };
+    let pb = pb.apply_embedded_orientation().unwrap_or(pb);
+    pb.savev(thumb_path, "jpeg", &[("quality", "88")]).is_ok()
+}
+
 fn generate_video_thumbnail(video_path: &Path, thumb_path: &Path) -> bool {
-    use std::process::Command;
+    use std::process::{Command, Stdio};
+    let size = SIZE.to_string();
 
     // Try ffmpegthumbnailer first (fast)
-    if let Ok(mut child) = Command::new("ffmpegthumbnailer")
+    let ok = Command::new("ffmpegthumbnailer")
         .arg("-i")
         .arg(video_path)
         .arg("-o")
         .arg(thumb_path)
-        .arg("-s")
-        .arg("360")
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .spawn()
-        && let Ok(status) = child.wait()
-        && status.success()
-        && thumb_path.exists()
-    {
+        .args(["-s", &size])
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .is_ok_and(|s| s.success());
+    if ok && thumb_path.exists() {
         return true;
     }
 
     // Fallback to ffmpeg
-    if let Ok(mut child) = Command::new("ffmpeg")
-        .arg("-y")
-        .arg("-ss")
-        .arg("00:00:01")
-        .arg("-i")
+    let ok = Command::new("ffmpeg")
+        .args(["-y", "-ss", "00:00:01", "-i"])
         .arg(video_path)
-        .arg("-vframes")
-        .arg("1")
-        .arg("-vf")
-        .arg("scale=360:360:force_original_aspect_ratio=decrease")
+        .args(["-vframes", "1", "-vf", &format!("scale={size}:{size}:force_original_aspect_ratio=decrease")])
         .arg(thumb_path)
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .spawn()
-        && let Ok(status) = child.wait()
-        && status.success()
-        && thumb_path.exists()
-    {
-        return true;
-    }
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .is_ok_and(|s| s.success());
+    ok && thumb_path.exists()
+}
 
-    false
+/// Delete cached thumbnails that no photo in `keep` uses (deleted, edited or moved
+/// photos, and thumbnails from older versions). Returns how many went.
+pub fn prune(keep: &HashSet<PathBuf>) -> usize {
+    let Ok(entries) = fs::read_dir(crate::paths::thumbnail_dir()) else { return 0 };
+    let mut removed = 0;
+    for e in entries.flatten() {
+        let p = e.path();
+        // Hidden names are thumbnails being written.
+        let in_progress = e.file_name().to_string_lossy().starts_with('.');
+        if !in_progress && p.extension().is_some_and(|x| x == "jpg") && !keep.contains(&p) && fs::remove_file(&p).is_ok() {
+            removed += 1;
+        }
+    }
+    removed
 }

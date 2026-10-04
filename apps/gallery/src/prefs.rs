@@ -29,7 +29,7 @@ pub struct Prefs {
     pub zoom: f64,
     pub inspector_open: bool,
     /// Where a double-clicked photo opens: `builtin` (the gallery's viewer) or `viewer`
-    /// (the stand-alone Nexus Photos Viewer).
+    /// (Nexus Photo Viewer, `npv`).
     pub open_with: String,
     /// What the editor's Save button does: `copy` or `replace`.
     pub save_mode: String,
@@ -37,6 +37,12 @@ pub struct Prefs {
     pub jpeg_quality: u8,
     /// Keep a copy of the original before replacing it.
     pub backup_originals: bool,
+    /// The library folders (`~/…` allowed). Empty means the Pictures folder.
+    pub folders: Vec<String>,
+    /// Thumbnail layout: `square` or `justified` (each photo keeps its shape).
+    pub layout: String,
+    /// Seconds each photo shows for in a slideshow.
+    pub slideshow_seconds: u32,
 }
 
 impl Default for Prefs {
@@ -55,6 +61,9 @@ impl Default for Prefs {
             save_mode: "copy".into(),
             jpeg_quality: 92,
             backup_originals: true,
+            folders: Vec::new(),
+            layout: "square".into(),
+            slideshow_seconds: 4,
         }
     }
 }
