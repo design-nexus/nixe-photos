@@ -302,7 +302,6 @@ impl Viewer {
             self.window.set_title(Some(NAME));
             return;
         }
-        self.pages.set_visible_child_name("photo");
         let at = self.index.get().min(files.len() - 1);
         self.index.set(at);
         let lib = saved();
@@ -312,6 +311,8 @@ impl Viewer {
         let to = (at + lightbox::STRIP_SIDE + 1).min(files.len());
         let strip = (from..to).map(|i| (i, cell_for(&files[i]))).collect();
         self.lightbox.show(&photo, lib.rotation(&photo.id), at + 1, files.len(), strip);
+        // After `show`: a stack won't switch to a page that is still hidden.
+        self.pages.set_visible_child_name("photo");
         self.window.set_title(Some(&format!("{} — {NAME}", photo.file_name)));
         let n = files.len();
         if n > 1 {
