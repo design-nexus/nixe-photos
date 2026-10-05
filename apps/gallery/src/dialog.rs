@@ -201,34 +201,32 @@ pub fn ask_export(count: usize, on_ok: impl Fn(crate::export::Options, std::path
 /// Keyboard shortcuts, by where they work.
 pub type Shortcuts = [(&'static str, &'static [(&'static str, &'static str)])];
 
-/// Every keyboard shortcut, in a card (the `?` key).
+/// Every keyboard shortcut (F1 or `?`): a heading and a card of rows for each section.
 pub fn show_shortcuts(shortcuts: &Shortcuts) {
     let Some((dialog, card)) = card_window("Keyboard shortcuts") else { return };
-    let grid = gtk::Grid::new();
-    grid.set_row_spacing(6);
-    grid.set_column_spacing(24);
-    let mut row = 0;
-    for (section, keys) in shortcuts {
-        let heading = widgets::label(section, "group-title shortcut-heading");
-        grid.attach(&heading, 0, row, 2, 1);
-        row += 1;
-        for (title, combo) in *keys {
-            let l = widgets::label(title, "");
-            l.set_hexpand(true);
-            grid.attach(&l, 0, row, 1, 1);
-            let c = crate::settings_view::keys_widget(combo);
-            c.set_halign(gtk::Align::End);
-            grid.attach(&c, 1, row, 1, 1);
-            row += 1;
+    dialog.set_default_width(520);
+    let body = widgets::vbox(0);
+    for (i, (section, keys)) in shortcuts.iter().enumerate() {
+        let heading = widgets::label(&section.to_uppercase(), "group-title");
+        if i == 0 {
+            heading.add_css_class("page-first");
         }
+        body.append(&heading);
+        let list = widgets::vbox(0);
+        list.add_css_class("settings-card");
+        list.set_overflow(gtk::Overflow::Hidden);
+        for (title, combo) in *keys {
+            list.append(&widgets::row(title, "", Some(crate::settings_view::keys_widget(combo).upcast_ref())));
+        }
+        body.append(&list);
     }
     let scroll = gtk::ScrolledWindow::builder()
         .hscrollbar_policy(gtk::PolicyType::Never)
-        .vscrollbar_policy(gtk::PolicyType::Automatic)
+        // Scrolls without a scrollbar, which would cover the key caps.
+        .vscrollbar_policy(gtk::PolicyType::External)
         .propagate_natural_height(true)
         .max_content_height(560)
-        .min_content_width(420)
-        .child(&grid)
+        .child(&body)
         .build();
     card.append(&scroll);
     let close = gtk::Button::with_label("Close");
@@ -239,7 +237,7 @@ pub fn show_shortcuts(shortcuts: &Shortcuts) {
     let keys = gtk::EventControllerKey::new();
     let d = dialog.clone();
     keys.connect_key_pressed(move |_, key, _, _| {
-        if matches!(key, gtk::gdk::Key::question | gtk::gdk::Key::Return) {
+        if key == gtk::gdk::Key::question {
             d.close();
             return gtk::glib::Propagation::Stop;
         }
@@ -247,5 +245,4 @@ pub fn show_shortcuts(shortcuts: &Shortcuts) {
     });
     dialog.add_controller(keys);
     dialog.present();
-    close.grab_focus();
 }

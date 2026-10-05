@@ -17,7 +17,7 @@ Omarchy theme live, groups photos on a timeline, and shows EXIF details in a sid
 - **Rotation:** <kbd>R</kbd> turns the view and remembers it; <kbd>Ctrl</kbd>+<kbd>S</kbd> or "Save to file" writes it into the photo (backing up the original first if Settings says so).
 - **Files:** move to the trash with <kbd>Delete</kbd> (Undo in the message puts it back), rename with <kbd>F2</kbd>, copy the image with <kbd>Ctrl</kbd>+<kbd>C</kbd>, drag photos out to other apps, set one as the Omarchy background, and export a selection as smaller copies or in another format.
 - **Videos:** show their length, and play silently while the pointer rests on them.
-- **Nexus Photo Viewer:** `npv FILE` opens one photo (and its folder) in a light window, with the same controls as the gallery's viewer — favorite, rotate and save the rotation, slideshow, copy, set as background, rename, trash with undo — plus Open in gallery and Edit in gallery. Favorites and rotations are shared with the gallery. Settings → Opening photos makes a double-click use it.
+- **Nexus Photo Viewer:** `npv FILE` opens one photo (and its folder) in a light window, with the same controls as the gallery's viewer — favorite, rotate and save the rotation, slideshow, copy, set as background, rename, trash with undo — plus Open in gallery and Edit in gallery. Favorites and rotations are shared with the gallery. Settings → Opening photos makes a double-click use it. Opened without a photo, it shows a drop zone and the photos it opened recently.
 - **Editing:** rotate, flip, crop (free or fixed ratio), resize, brightness, contrast, saturation, Mono and Sepia filters, and markup (pen, highlighter, arrow, rectangle, ellipse, text and blur). Edits can be undone and redone, copied to the clipboard, and saved as a copy or over the original.
 - **Photo info:** file details, a brightness histogram, camera and lens settings, the location (with a map link) when the photo has one, the folder, and the albums it is in.
 - **Themes:** follows the current Omarchy theme as it changes, or pick one of 15 bundled themes or your own.
@@ -39,7 +39,7 @@ Thumbnails for videos need `ffmpegthumbnailer` or `ffmpeg`.
 ```bash
 nexus-photos                      # open the library (~/Pictures)
 nexus-photos photo.jpg            # open a file in the viewer (its folder is shown if it isn't in the library)
-npv photo.jpg                     # open a file in Nexus Photo Viewer (npv alone offers to open one)
+npv photo.jpg                     # open a file in Nexus Photo Viewer (npv alone shows recent photos)
 nexus-photos --edit photo.jpg     # open a file straight in the editor
 nexus-photos --section settings   # open a page: all_photos, favorites, recent, folders, duplicates, photos, screenshots, videos, settings
 ```

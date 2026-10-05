@@ -3,17 +3,18 @@
 
 use gtk::prelude::*;
 use gtk::{gdk, glib};
-use nexus_photos::grid::CellData;
+use nexus_photos::clamp::Clamp;
+use nexus_photos::grid::{self, CellData};
 use nexus_photos::library::{self, Library};
 use nexus_photos::lightbox::{self, Action, Lightbox};
 use nexus_photos::models::{PhotoItem, photo_id};
 use nexus_photos::scanner::IMAGE_EXTENSIONS;
-use nexus_photos::widgets::hbox;
-use nexus_photos::{actions, cmd, dialog, metadata, theme, thumbnails};
+use nexus_photos::widgets::{self, hbox};
+use nexus_photos::{actions, cmd, dialog, metadata, recent, theme, thumbnails};
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
 use std::time::Duration;
 
 const APP_ID: &str = "io.github.nexus.photos.viewer";
@@ -106,9 +107,12 @@ fn is_image(path: &Path) -> bool {
 }
 
 struct Viewer {
+    /// Itself, for the recent rows' clicks.
+    me: Weak<Viewer>,
     app: gtk::Application,
     window: gtk::ApplicationWindow,
     lightbox: Lightbox,
+    home: Home,
     /// The photo, or the "Open a photo" page when there is none.
     pages: gtk::Stack,
     /// Holds the pages and the toasts.
@@ -131,8 +135,9 @@ fn build(app: &gtk::Application, file: Option<PathBuf>) {
     window.set_icon_name(Some("io.github.nexus.photos"));
 
     let lightbox = Lightbox::new(lightbox::Mode::Standalone);
+    let home = home_page();
     let pages = gtk::Stack::new();
-    pages.add_named(&empty_page(), Some("empty"));
+    pages.add_named(&home.root, Some("empty"));
     pages.add_named(lightbox.widget(), Some("photo"));
     pages.set_vexpand(true);
 
@@ -162,10 +167,12 @@ fn build(app: &gtk::Application, file: Option<PathBuf>) {
     overlay.set_child(Some(&frame));
     window.set_child(Some(&overlay));
 
-    let v = Rc::new(Viewer {
+    let v = Rc::new_cyclic(|me| Viewer {
+        me: me.clone(),
         app: app.clone(),
         window: window.clone(),
         lightbox,
+        home,
         pages,
         overlay,
         folder,
@@ -199,14 +206,39 @@ fn build(app: &gtk::Application, file: Option<PathBuf>) {
     });
     window.add_controller(drop);
 
-    if let Some(button) = find_button(&v.pages, "open-photo") {
-        let me = v.clone();
-        button.connect_clicked(move |_| me.choose());
-    }
-    if let Some(button) = find_button(&v.pages, "close-viewer") {
-        let w = window.clone();
-        button.connect_clicked(move |_| w.close());
-    }
+    let me = v.clone();
+    v.home.open.connect_clicked(move |_| me.choose());
+    v.home.gallery.connect_clicked(|_| cmd::spawn(&[GALLERY]));
+    let w = window.clone();
+    v.home.close.connect_clicked(move |_| w.close());
+    let me = v.clone();
+    v.home.clear.connect_clicked(move |_| {
+        recent::clear();
+        me.refresh_recents();
+        me.toast("Cleared the recent list. The photos themselves are untouched.", None);
+    });
+    // The drop zone lights up while a photo is dragged over it.
+    let target = gtk::DropTarget::new(gdk::FileList::static_type(), gdk::DragAction::COPY);
+    let z = v.home.zone.clone();
+    target.connect_enter(move |_, _, _| {
+        z.add_css_class("drop-hover");
+        gdk::DragAction::COPY
+    });
+    let z = v.home.zone.clone();
+    target.connect_leave(move |_| z.remove_css_class("drop-hover"));
+    let (z, me) = (v.home.zone.clone(), v.clone());
+    target.connect_drop(move |_, value, _, _| {
+        z.remove_css_class("drop-hover");
+        let Ok(list) = value.get::<gdk::FileList>() else { return false };
+        match list.files().iter().filter_map(|f| f.path()).find(|p| p.is_file()) {
+            Some(path) => {
+                me.load(&path);
+                true
+            }
+            None => false,
+        }
+    });
+    v.home.zone.add_controller(target);
 
     match file {
         Some(f) => v.load(&f),
@@ -215,67 +247,166 @@ fn build(app: &gtk::Application, file: Option<PathBuf>) {
     window.present();
 }
 
-/// What the window shows with no photo: a way to open one.
-fn empty_page() -> gtk::Box {
-    let page = nexus_photos::widgets::vbox(10);
-    page.add_css_class("lightbox");
-    page.add_css_class("viewer-empty");
-    page.set_valign(gtk::Align::Fill);
-    // The same top bar the photo has, with nothing open yet.
-    let top = nexus_photos::widgets::hbox(4);
-    top.add_css_class("top-bar");
-    let crumbs = nexus_photos::widgets::hbox(10);
-    crumbs.add_css_class("crumbs");
-    crumbs.set_hexpand(true);
-    crumbs.append(&nexus_photos::widgets::label("Photo Viewer", "crumb-root"));
-    crumbs.append(&nexus_photos::widgets::label("/", "crumb-sep"));
-    crumbs.append(&nexus_photos::widgets::label("No photo open", "crumb"));
-    top.append(&crumbs);
-    let close = nexus_photos::widgets::bar_button("window-close-symbolic", "Close (Esc)");
-    close.add_css_class("close-viewer");
-    top.append(&close);
-    page.append(&top);
-    let inner = nexus_photos::widgets::vbox(10);
-    inner.set_valign(gtk::Align::Center);
-    inner.set_vexpand(true);
-    let icon = gtk::Image::from_icon_name("image-x-generic-symbolic");
-    icon.set_pixel_size(64);
-    icon.add_css_class("dim");
-    inner.append(&icon);
-    let title = nexus_photos::widgets::label(NAME, "section-title");
-    title.set_halign(gtk::Align::Center);
-    inner.append(&title);
-    let text = nexus_photos::widgets::label("Open a photo, or drop one here. ← and → then move through its folder.", "dim");
-    text.set_halign(gtk::Align::Center);
-    text.set_wrap(true);
-    text.set_justify(gtk::Justification::Center);
-    inner.append(&text);
-    let open = gtk::Button::new();
-    open.set_child(Some(&nexus_photos::widgets::button_content("document-open-symbolic", "Open a photo…")));
-    open.add_css_class("suggested-action");
-    open.add_css_class("open-photo");
-    open.set_halign(gtk::Align::Center);
-    open.set_margin_top(8);
-    open.set_tooltip_text(Some("Ctrl+O"));
-    inner.append(&open);
-    page.append(&inner);
-    page
+/// The page shown with no photo: a drop zone and the recent photos.
+struct Home {
+    root: gtk::Box,
+    zone: gtk::Box,
+    open: gtk::Button,
+    gallery: gtk::Button,
+    close: gtk::Button,
+    clear: gtk::Button,
+    recents_group: gtk::Box,
+    recents: gtk::Box,
 }
 
-/// The first button inside `w` with this style class.
-fn find_button(w: &impl IsA<gtk::Widget>, class: &str) -> Option<gtk::Button> {
-    let w = w.as_ref();
-    if w.has_css_class(class) {
-        return w.clone().downcast().ok();
+fn home_page() -> Home {
+    let root = widgets::vbox(0);
+    root.add_css_class("viewer-home");
+    // The same top bar the photo has, with nothing open yet.
+    let top = widgets::hbox(4);
+    top.add_css_class("top-bar");
+    let crumbs = widgets::hbox(10);
+    crumbs.add_css_class("crumbs");
+    crumbs.set_hexpand(true);
+    crumbs.append(&widgets::label("Photo Viewer", "crumb-root"));
+    crumbs.append(&widgets::label("/", "crumb-sep"));
+    crumbs.append(&widgets::label("Home", "crumb"));
+    top.append(&crumbs);
+    let close = widgets::bar_button("window-close-symbolic", "Close (Esc)");
+    top.append(&close);
+    root.append(&top);
+
+    let body = widgets::vbox(0);
+    body.add_css_class("settings-page");
+
+    // ----- Drop zone -----
+    let zone = widgets::vbox(10);
+    zone.add_css_class("dropzone");
+    zone.set_margin_top(18);
+    let icon = gtk::Image::from_icon_name("image-x-generic-symbolic");
+    icon.set_pixel_size(44);
+    icon.add_css_class("dropzone-icon");
+    zone.append(&icon);
+    let title = widgets::label("Drop a photo here", "dropzone-title");
+    title.set_halign(gtk::Align::Center);
+    zone.append(&title);
+    let sub = widgets::label("Open a photo, or drop one here. ← and → then move through its folder.", "dim");
+    sub.set_halign(gtk::Align::Center);
+    sub.set_wrap(true);
+    sub.set_justify(gtk::Justification::Center);
+    zone.append(&sub);
+    let buttons = widgets::hbox(10);
+    buttons.set_halign(gtk::Align::Center);
+    buttons.set_margin_top(10);
+    let open = gtk::Button::new();
+    open.set_child(Some(&widgets::button_content("document-open-symbolic", "Open photo")));
+    open.add_css_class("suggested-action");
+    open.set_tooltip_text(Some("Ctrl+O"));
+    buttons.append(&open);
+    let gallery = gtk::Button::new();
+    gallery.set_child(Some(&widgets::button_content("view-grid-symbolic", "Open gallery")));
+    gallery.set_tooltip_text(Some("G"));
+    gallery.set_visible(cmd::present(GALLERY));
+    buttons.append(&gallery);
+    zone.append(&buttons);
+    body.append(&zone);
+
+    // ----- Recent -----
+    let recents_group = widgets::vbox(0);
+    let head = widgets::hbox(8);
+    let t = widgets::label("RECENT", "group-title");
+    t.set_hexpand(true);
+    head.append(&t);
+    let clear = gtk::Button::with_label("Clear list");
+    clear.add_css_class("flat");
+    clear.add_css_class("small-button");
+    clear.set_valign(gtk::Align::End);
+    clear.set_margin_bottom(4);
+    head.append(&clear);
+    recents_group.append(&head);
+    let recents = widgets::vbox(6);
+    recents_group.append(&recents);
+    body.append(&recents_group);
+
+    let scroll = gtk::ScrolledWindow::builder()
+        .hscrollbar_policy(gtk::PolicyType::Never)
+        .child(&Clamp::new(&body, 920))
+        .vexpand(true)
+        .build();
+    root.append(&scroll);
+    Home { root, zone, open, gallery, close, clear, recents_group, recents }
+}
+
+/// A recent photo: its thumbnail, name, folder and facts, and a button to forget it.
+fn recent_row(path: &Path, open: impl Fn(&Path) + 'static) -> gtk::Box {
+    let card = widgets::hbox(0);
+    card.add_css_class("recent-row");
+    let button = gtk::Button::new();
+    button.add_css_class("flat");
+    button.set_hexpand(true);
+    let c = widgets::hbox(12);
+    let thumb = gtk::Picture::new();
+    thumb.add_css_class("recent-thumb");
+    thumb.set_content_fit(gtk::ContentFit::Cover);
+    thumb.set_can_shrink(true);
+    thumb.set_size_request(40, 40);
+    thumb.set_valign(gtk::Align::Center);
+    thumb.set_overflow(gtk::Overflow::Hidden);
+    let t = thumb.clone();
+    grid::thumbnail_texture(&cell_for(path), move |tex| t.set_paintable(Some(&tex)));
+    c.append(&thumb);
+    let text = widgets::vbox(1);
+    text.set_hexpand(true);
+    text.set_valign(gtk::Align::Center);
+    let name = widgets::label(&path.file_name().unwrap_or_default().to_string_lossy(), "settings-option-title");
+    name.set_xalign(0.0);
+    name.set_ellipsize(gtk::pango::EllipsizeMode::Middle);
+    let dir = widgets::label(&path.parent().map(nexus_photos::paths::pretty).unwrap_or_default(), "mono");
+    dir.add_css_class("settings-option-description");
+    dir.set_xalign(0.0);
+    dir.set_ellipsize(gtk::pango::EllipsizeMode::Start);
+    text.append(&name);
+    text.append(&dir);
+    c.append(&text);
+    if let Ok(meta) = std::fs::metadata(path) {
+        let kind = path.extension().map(|e| e.to_string_lossy().to_uppercase()).unwrap_or_default();
+        let when = meta
+            .modified()
+            .ok()
+            .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+            .and_then(|d| glib::DateTime::from_unix_local(d.as_secs() as i64).ok())
+            .and_then(|d| d.format("%-d %b %Y").ok())
+            .map(|s| s.to_string())
+            .unwrap_or_default();
+        let facts = widgets::label(&format!("{kind} · {} · {when}", glib::format_size(meta.len())), "mono");
+        facts.add_css_class("dim");
+        facts.add_css_class("recent-facts");
+        facts.set_ellipsize(gtk::pango::EllipsizeMode::End);
+        c.append(&facts);
     }
-    let mut child = w.first_child();
-    while let Some(c) = child {
-        if let Some(b) = find_button(&c, class) {
-            return Some(b);
+    button.set_child(Some(&c));
+    let p = path.to_path_buf();
+    button.connect_clicked(move |_| open(&p));
+    card.append(&button);
+    let remove = widgets::icon_button("window-close-symbolic", "Remove from recent");
+    remove.set_valign(gtk::Align::Center);
+    let p = path.to_path_buf();
+    let weak = card.downgrade();
+    remove.connect_clicked(move |_| {
+        recent::forget(&p);
+        if let Some(card) = weak.upgrade()
+            && let Some(list) = card.parent().and_downcast::<gtk::Box>()
+        {
+            list.remove(&card);
+            if list.first_child().is_none()
+                && let Some(group) = list.parent()
+            {
+                group.set_visible(false);
+            }
         }
-        child = c.next_sibling();
-    }
-    None
+    });
+    card.append(&remove);
+    card
 }
 
 /// The saved favourites, albums and rotations, read fresh: the gallery may have changed them.
@@ -306,6 +437,7 @@ impl Viewer {
     fn load(&self, file: &Path) {
         let files = siblings(file);
         let index = files.iter().position(|p| p == file).unwrap_or(0);
+        recent::record(&std::fs::canonicalize(file).unwrap_or_else(|_| file.to_path_buf()));
         *self.files.borrow_mut() = files;
         self.items.borrow_mut().clear();
         self.index.set(index);
@@ -344,6 +476,7 @@ impl Viewer {
         let files = self.files.borrow().clone();
         if files.is_empty() {
             self.lightbox.hide();
+            self.refresh_recents();
             self.pages.set_visible_child_name("empty");
             self.window.set_title(Some(NAME));
             self.folder.set_text("");
@@ -371,6 +504,24 @@ impl Viewer {
         }
     }
 
+    /// Fill the home page's recent list from disk.
+    fn refresh_recents(&self) {
+        let list = &self.home.recents;
+        while let Some(c) = list.first_child() {
+            list.remove(&c);
+        }
+        let photos = recent::list();
+        self.home.recents_group.set_visible(!photos.is_empty());
+        for path in photos {
+            let me = self.me.clone();
+            list.append(&recent_row(&path, move |p| {
+                if let Some(me) = me.upgrade() {
+                    me.load(p);
+                }
+            }));
+        }
+    }
+
     fn go(&self, to: usize) {
         self.index.set(to);
         self.show();
@@ -394,6 +545,7 @@ impl Viewer {
                 gdk::Key::o if ctrl => self.choose(),
                 gdk::Key::Escape => self.window.close(),
                 gdk::Key::question | gdk::Key::F1 => dialog::show_shortcuts(SHORTCUTS),
+                gdk::Key::g | gdk::Key::G if cmd::present(GALLERY) => cmd::spawn(&[GALLERY]),
                 _ => return glib::Propagation::Proceed,
             }
             return glib::Propagation::Stop;

@@ -17,6 +17,7 @@ pub mod metadata;
 pub mod models;
 pub mod paths;
 pub mod prefs;
+pub mod recent;
 pub mod scanner;
 pub mod settings_dialog;
 pub mod settings_view;

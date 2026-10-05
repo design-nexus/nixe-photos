@@ -16,7 +16,8 @@
   albums (atomic writes).
 - Two binaries share one library (`lib.rs`): `nexus-photos` (`main.rs`) and `npv`, Nexus Photo
   Viewer (`src/bin/npv.rs`, one folder of photos, hands off to the gallery with `nexus-photos [--edit] FILE`).
-  `npv` is `Lightbox` in `Mode::Standalone`, so viewer changes land in both. It reads favourites and
+  `npv` is `Lightbox` in `Mode::Standalone`, so viewer changes land in both. With no photo, `npv` shows its
+  home page (`home_page`: drop zone and the recent photos from `recent.rs`, `~/.local/share/nexus-photos/recent.json`). It reads favourites and
   rotations fresh from disk for every change; the gallery re-reads them when its window is activated.
   `actions.rs` holds what both do to files (copy, trash, save rotation, set background).
   `stage.rs` is the picture area (fit/zoom/pan/pinch) used by both viewers. The `open_with` pref
