@@ -670,9 +670,25 @@ impl App {
         w.connect_default_width_notify(move |_| a.apply_width());
         let a = self.clone();
         w.connect_realize(move |_| a.apply_width());
-        // Tiled windows are resized by the compositor; watch the real size too.
+        // Tiled windows are resized by the compositor without touching the
+        // default size: an invisible layer over the whole window reports each
+        // real size change, and the layout follows on the next frame.
+        if let Some(overlay) = w.child().and_downcast::<gtk::Overlay>() {
+            let probe = gtk::DrawingArea::new();
+            probe.set_can_target(false);
+            probe.set_can_focus(false);
+            overlay.add_overlay(&probe);
+            overlay.set_measure_overlay(&probe, false);
+            let a = self.clone();
+            probe.connect_resize(move |_, _, _| {
+                let a = a.clone();
+                // After this layout pass, when the window's width is the new one.
+                glib::idle_add_local_once(move || a.apply_width());
+            });
+        }
+        // A slow fallback, in case a resize slips by.
         let a = self.clone();
-        glib::timeout_add_local(Duration::from_millis(400), move || {
+        glib::timeout_add_local(Duration::from_millis(1500), move || {
             a.apply_width();
             glib::ControlFlow::Continue
         });
