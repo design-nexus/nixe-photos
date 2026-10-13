@@ -135,7 +135,7 @@ fn build(app: &gtk::Application, file: Option<PathBuf>) {
     window.add_css_class("photos-window");
     // No client-side titlebar: Hyprland manages the window.
     window.set_titlebar(Some(&gtk::Box::new(gtk::Orientation::Horizontal, 0)));
-    window.set_icon_name(Some("io.github.design_nexus.nixe.Photos"));
+    window.set_icon_name(Some("io.github.design_nexus.nixe.PhotoViewer"));
 
     let lightbox = Lightbox::new(lightbox::Mode::Standalone);
     let home = home_page();
