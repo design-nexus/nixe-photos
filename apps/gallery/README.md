@@ -1,4 +1,4 @@
-# Nexus Photos
+# Photos
 
 A fast, keyboard-first photo gallery for Omarchy, built with GTK4 and Rust. It follows the
 Omarchy theme live, groups photos on a timeline, and shows EXIF details in a side drawer.
@@ -17,7 +17,7 @@ Omarchy theme live, groups photos on a timeline, and shows EXIF details in a sid
 - **Rotation:** <kbd>R</kbd> turns the view and remembers it; <kbd>Ctrl</kbd>+<kbd>S</kbd> or "Save to file" writes it into the photo (backing up the original first if Settings says so).
 - **Files:** move to the trash with <kbd>Delete</kbd> (Undo in the message puts it back), rename with <kbd>F2</kbd>, copy the image with <kbd>Ctrl</kbd>+<kbd>C</kbd>, drag photos out to other apps, set one as the Omarchy background, and export a selection as smaller copies or in another format.
 - **Videos:** show their length, and play silently while the pointer rests on them.
-- **Nexus Photo Viewer:** `npv FILE` opens one photo (and its folder) in a light window, with the same controls as the gallery's viewer — favorite, rotate and save the rotation, slideshow, copy, set as background, rename, trash with undo — plus Open in gallery and Edit in gallery. Favorites and rotations are shared with the gallery. Settings → Opening photos makes a double-click use it. Opened without a photo, it shows a drop zone and the photos it opened recently.
+- **Photo Viewer:** `nixe-viewer FILE` opens one photo (and its folder) in a light window, with the same controls as the gallery's viewer — favorite, rotate and save the rotation, slideshow, copy, set as background, rename, trash with undo — plus Open in gallery and Edit in gallery. Favorites and rotations are shared with the gallery. Settings → Opening photos makes a double-click use it. Opened without a photo, it shows a drop zone and the photos it opened recently.
 - **Editing:** rotate, flip, crop (free or fixed ratio), resize, brightness, contrast, saturation, Mono and Sepia filters, and markup (pen, highlighter, arrow, rectangle, ellipse, text and blur). Edits can be undone and redone, copied to the clipboard, and saved as a copy or over the original.
 - **Photo info:** file details, a brightness histogram, camera and lens settings, the location (with a map link) when the photo has one, the folder, and the albums it is in.
 - **Themes:** follows the current Omarchy theme as it changes, or pick one of 15 bundled themes or your own.
@@ -26,10 +26,10 @@ Omarchy theme live, groups photos on a timeline, and shows EXIF details in a sid
 ## Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/design-nexus/nexus-gallery/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/design-nexus/nixe/main/install.sh | bash -s -- photos
 ```
 
-This builds Nexus Photos with Cargo (installing Rust and GTK 4 with pacman if needed) and
+This builds Photos with Cargo (installing Rust and GTK 4 with pacman if needed) and
 installs the binary, desktop entry and icon under `~/.local`. From a clone, run `./install.sh`.
 
 Thumbnails for videos need `ffmpegthumbnailer` or `ffmpeg`.
@@ -37,11 +37,11 @@ Thumbnails for videos need `ffmpegthumbnailer` or `ffmpeg`.
 ## Usage
 
 ```bash
-nexus-photos                      # open the library (~/Pictures)
-nexus-photos photo.jpg            # open a file in the viewer (its folder is shown if it isn't in the library)
-npv photo.jpg                     # open a file in Nexus Photo Viewer (npv alone shows recent photos)
-nexus-photos --edit photo.jpg     # open a file straight in the editor
-nexus-photos --section settings   # open a page: all_photos, favorites, recent, folders, duplicates, photos, screenshots, videos, settings
+nixe-photos                      # open the library (~/Pictures)
+nixe-photos photo.jpg            # open a file in the viewer (its folder is shown if it isn't in the library)
+nixe-viewer photo.jpg                     # open a file in Photo Viewer (on its own it shows recent photos)
+nixe-photos --edit photo.jpg     # open a file straight in the editor
+nixe-photos --section settings   # open a page: all_photos, favorites, recent, folders, duplicates, photos, screenshots, videos, settings
 ```
 
 Launching it again focuses the open window. The photo info panel (<kbd>I</kbd>) is closed until you open it, and it remembers. Photos and videos are looked for in `~/Pictures`
