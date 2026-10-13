@@ -17,6 +17,7 @@ const USAGE: &str = "Usage: nexus-photos [--section ID] [--edit] [FILE]
 ";
 
 fn main() -> glib::ExitCode {
+    nixe_core::app::init(nixe_core::app::App { slug: "nexus-photos", name: "Photos" });
     let args: Vec<String> = std::env::args().skip(1).collect();
     if args.iter().any(|a| a == "-h" || a == "--help") {
         print!("{USAGE}");

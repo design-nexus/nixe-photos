@@ -1,17 +1,8 @@
 //! This app's own preferences (`~/.config/nexus-photos/settings.toml`).
 
-use crate::{cmd, paths};
-use serde::{Deserialize, Serialize};
-use std::cell::RefCell;
+pub use nixe_theme::ThemeMode;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "kebab-case")]
-pub enum ThemeMode {
-    /// Follow the active Omarchy theme live.
-    Omarchy,
-    /// Use a bundled or custom theme.
-    Theme,
-}
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -68,49 +59,7 @@ impl Default for Prefs {
     }
 }
 
-thread_local! {
-    static PREFS: RefCell<Prefs> = RefCell::new(load());
-}
-
-fn load() -> Prefs {
-    std::fs::read_to_string(paths::prefs_file()).ok().and_then(|text| toml::from_str(&text).ok()).unwrap_or_default()
-}
-
-pub fn get() -> Prefs {
-    PREFS.with(|p| p.borrow().clone())
-}
-
-/// Change a preference now and write the file shortly after the last change, so
-/// dragging the zoom slider doesn't rewrite it on every tick.
-pub fn update(change: impl FnOnce(&mut Prefs)) {
-    PREFS.with(|p| change(&mut p.borrow_mut()));
-    schedule_save();
-}
-
-thread_local! {
-    static PENDING: RefCell<Option<gtk::glib::SourceId>> = const { RefCell::new(None) };
-}
-
-fn schedule_save() {
-    PENDING.with(|pending| {
-        if let Some(id) = pending.borrow_mut().take() {
-            id.remove();
-        }
-        let id = gtk::glib::timeout_add_local_once(std::time::Duration::from_millis(450), || {
-            PENDING.with(|p| p.borrow_mut().take());
-            flush();
-        });
-        *pending.borrow_mut() = Some(id);
-    });
-}
-
-/// Write the preferences now (on quit, or when the debounce fires).
-pub fn flush() {
-    let prefs = get();
-    if let Ok(text) = toml::to_string_pretty(&prefs) {
-        let _ = cmd::atomic_write(&paths::prefs_file(), &text);
-    }
-}
+nixe_core::prefs_store!(Prefs);
 
 #[cfg(test)]
 mod tests {
