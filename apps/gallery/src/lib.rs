@@ -3,7 +3,7 @@
 
 #![allow(clippy::new_without_default)]
 pub mod actions;
-pub mod clamp;
+pub use nixe_ui::clamp;
 pub mod cmd;
 pub mod dialog;
 pub mod edit;
