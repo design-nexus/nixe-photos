@@ -11,6 +11,7 @@ use crate::state::{LIBRARY_SECTIONS, MEDIA_SECTIONS, State};
 use crate::widgets::{self, hbox, label, vbox};
 use crate::{cmd, dialog, library, paths, prefs, settings_dialog, settings_view, theme};
 use gtk::prelude::*;
+use nixe_ui::chrome;
 use gtk::{gdk, gio, glib};
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
@@ -42,8 +43,6 @@ pub struct App {
     pages: gtk::Stack,
     gallery_page: gtk::Box,
     page: RefCell<String>,
-    /// The current section's name, in the top bar.
-    crumb: gtk::Label,
     // Header
     header_actions: gtk::Box,
     info_button: gtk::Button,
@@ -194,11 +193,12 @@ impl App {
         let nav = vbox(0);
         nav.add_css_class("settings-navigation");
         nav.set_hexpand(false);
-        let collapse_button = widgets::bar_button("sidebar-show-symbolic", "Collapse the sidebar (Ctrl+B)");
+        let head = chrome::sidebar_head("Photos", Some("Search photos (Ctrl+F)"));
+        let collapse_button = head.toggle.clone();
+        collapse_button.set_tooltip_text(Some("Collapse the sidebar (Ctrl+B)"));
+        let find = head.search.clone().expect("the head has a search button");
         let search = gtk::SearchEntry::new();
         search.set_placeholder_text(Some("Search photos"));
-        search.add_css_class("bar-search");
-        search.set_width_chars(26);
         search.set_visible(false);
 
         let list = vbox(0);
@@ -210,13 +210,14 @@ impl App {
             .vexpand(true)
             .child(&list)
             .build();
+        nav.append(&head.root);
         nav.append(&nav_scroll);
 
         // ----- Gallery page -----
         let gallery_page = vbox(0);
         gallery_page.set_hexpand(true);
         // One slim bar on top: how to group, how big, and a few actions. No title: the
-        // top bar already says where you are.
+        // sidebar already says where you are.
         let bar = hbox(8);
         bar.add_css_class("gallery-bar");
         let header_actions = hbox(8);
@@ -249,6 +250,8 @@ impl App {
         status_items.set_ellipsize(gtk::pango::EllipsizeMode::Start);
         status.append(&status_selection);
         status.append(&status_items);
+        let gear = chrome::gear(|| {});
+        status.append(&gear);
 
         // ----- Pages and the info drawer -----
         let pages = gtk::Stack::new();
@@ -265,8 +268,11 @@ impl App {
             .build();
         pages.add_named(&gallery_scroll, Some("gallery"));
 
+        let column = vbox(0);
+        column.append(&chrome::search_strip(&search));
+        column.append(&pages);
         let content = gtk::Overlay::new();
-        content.set_child(Some(&pages));
+        content.set_child(Some(&column));
         content.set_hexpand(true);
         inspector.root.set_halign(gtk::Align::End);
         inspector.root.set_valign(gtk::Align::Fill);
@@ -276,31 +282,8 @@ impl App {
         body.append(&nav);
         body.append(&content);
 
-        // The bar across the top: the sidebar toggle and where you are on the left;
-        // search, settings and close on the right.
-        let top = hbox(4);
-        top.add_css_class("top-bar");
-        top.append(&collapse_button);
-        let crumbs = hbox(10);
-        crumbs.add_css_class("crumbs");
-        crumbs.append(&label("Photos", "crumb-root"));
-        crumbs.append(&label("/", "crumb-sep"));
-        let crumb = label("", "crumb");
-        crumb.set_ellipsize(gtk::pango::EllipsizeMode::End);
-        crumbs.append(&crumb);
-        crumbs.set_hexpand(true);
-        top.append(&crumbs);
-        top.append(&search);
-        let find = widgets::bar_button("system-search-symbolic", "Search photos (Ctrl+F)");
-        top.append(&find);
-        let gear = widgets::bar_button("emblem-system-symbolic", "Settings");
-        top.append(&gear);
-        let close = widgets::bar_button("window-close-symbolic", "Close (Ctrl+W)");
-        top.append(&close);
-
         let frame = vbox(0);
         frame.add_css_class("window-frame");
-        frame.append(&top);
         frame.append(&body);
         frame.append(&status);
         let overlay = gtk::Overlay::new();
@@ -320,7 +303,6 @@ impl App {
             pages,
             gallery_page,
             page: RefCell::new(String::new()),
-            crumb,
             header_actions,
             info_button: widgets::icon_button("dialog-information-symbolic", "Photo info (I)"),
             zoom_inline: hbox(6),
@@ -371,8 +353,6 @@ impl App {
         });
         let a = app.clone();
         gear.connect_clicked(move |_| a.show_settings());
-        let w = app.window.clone();
-        close.connect_clicked(move |_| w.close());
         app
     }
 
@@ -919,7 +899,7 @@ impl App {
         let empty = items.is_empty();
         let message = self.empty_message(&s);
         let n = s.shown.len();
-        self.crumb.set_text(&s.section_title());
+        chrome::set_title(&self.window, "Photos", &s.section_title());
         self.status_items.set_text(&format!("{n} {}", if n == 1 { "item" } else { "items" }));
         let spans = s.spans.clone();
         let album = s.album_id().map(String::from);
@@ -2192,6 +2172,9 @@ impl App {
         } else {
             "Collapse the sidebar (Ctrl+B)"
         }));
+        if let Some(head) = self.nav.first_child().and_downcast::<gtk::Box>() {
+            chrome::set_head_compact(&head, compact);
+        }
         centre_icons(self.nav.upcast_ref(), compact);
     }
 
