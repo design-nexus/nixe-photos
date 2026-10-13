@@ -1,18 +1,12 @@
 //! Small building blocks shared by the views: labels, option rows, cards, buttons.
 
+pub use nixe_ui::widgets::*;
+
 use crate::{cmd, paths};
 use gtk::prelude::*;
 use gtk::{glib, pango};
 use std::path::PathBuf;
 use std::rc::Rc;
-
-pub fn hbox(spacing: i32) -> gtk::Box {
-    gtk::Box::new(gtk::Orientation::Horizontal, spacing)
-}
-
-pub fn vbox(spacing: i32) -> gtk::Box {
-    gtk::Box::new(gtk::Orientation::Vertical, spacing)
-}
 
 pub fn label(text: &str, class: &str) -> gtk::Label {
     let l = gtk::Label::new(Some(text));
@@ -21,16 +15,6 @@ pub fn label(text: &str, class: &str) -> gtk::Label {
     }
     l.set_xalign(0.0);
     l
-}
-
-/// A flat 28 px icon button.
-pub fn icon_button(icon: &str, tooltip: &str) -> gtk::Button {
-    let b = gtk::Button::from_icon_name(icon);
-    b.add_css_class("flat");
-    b.add_css_class("icon-button");
-    b.set_tooltip_text(Some(tooltip));
-    b.set_valign(gtk::Align::Center);
-    b
 }
 
 /// An icon and a label side by side, as a button's content.
@@ -98,15 +82,6 @@ pub fn config_button(files: &[PathBuf]) -> gtk::Widget {
     popover.set_child(Some(&list));
     menu.set_popover(Some(&popover));
     menu.upcast()
-}
-
-/// A flat icon button for the top bar and dialog headers.
-pub fn bar_button(icon: &str, tooltip: &str) -> gtk::Button {
-    let b = gtk::Button::from_icon_name(icon);
-    b.add_css_class("bar-button");
-    b.set_tooltip_text(Some(tooltip));
-    b.set_valign(gtk::Align::Center);
-    b
 }
 
 // ---------- Groups and rows ----------
@@ -280,14 +255,6 @@ pub fn confirm_button(label: &str, confirm: &str, on_confirm: impl Fn(&gtk::Butt
         on_confirm(b);
     });
     b
-}
-
-/// Set a widget's background to a colour (for swatches).
-pub fn paint(widget: &impl IsA<gtk::Widget>, css_colour: &str) {
-    let provider = gtk::CssProvider::new();
-    provider.load_from_string(&format!("* {{ background: {css_colour}; }}"));
-    #[allow(deprecated)]
-    widget.style_context().add_provider(&provider, gtk::STYLE_PROVIDER_PRIORITY_USER);
 }
 
 /// A button's label and what it does, for messages that may offer one.
