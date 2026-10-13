@@ -736,6 +736,7 @@ impl App {
                     self.zoom_thumbnails(0.1)
                 }
                 gdk::Key::minus | gdk::Key::KP_Subtract if browsing && !self.lightbox.is_open() => self.zoom_thumbnails(-0.1),
+                gdk::Key::comma => self.show_settings(),
                 _ => return glib::Propagation::Proceed,
             }
             return stop;
