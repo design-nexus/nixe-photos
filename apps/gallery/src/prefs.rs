@@ -1,4 +1,4 @@
-//! This app's own preferences (`~/.config/nexus-photos/settings.toml`).
+//! This app's own preferences (`~/.config/nixe-photos/settings.toml`).
 
 pub use nixe_theme::ThemeMode;
 
@@ -20,7 +20,7 @@ pub struct Prefs {
     pub zoom: f64,
     pub inspector_open: bool,
     /// Where a double-clicked photo opens: `builtin` (the gallery's viewer) or `viewer`
-    /// (Nexus Photo Viewer, `npv`).
+    /// (Photo Viewer, `nixe-viewer`).
     pub open_with: String,
     /// What the editor's Save button does: `copy` or `replace`.
     pub save_mode: String,

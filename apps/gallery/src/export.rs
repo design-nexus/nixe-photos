@@ -103,7 +103,7 @@ mod tests {
 
     #[test]
     fn exports_smaller_copies_without_overwriting() {
-        let dir = std::env::temp_dir().join(format!("nexus-photos-export-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("nixe-photos-export-{}", std::process::id()));
         let out = dir.join("out");
         std::fs::create_dir_all(&dir).unwrap();
         let src = dir.join("a.png");

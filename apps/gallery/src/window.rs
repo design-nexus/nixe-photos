@@ -18,8 +18,8 @@ use std::path::PathBuf;
 use std::rc::Rc;
 use std::time::Duration;
 
-const APP_NAME: &str = "Nexus Photos";
-const VIEWER: &str = "npv";
+const APP_NAME: &str = "Photos";
+const VIEWER: &str = "nixe-viewer";
 /// How long after the last change in a watched folder it is scanned again.
 const RESCAN_AFTER: Duration = Duration::from_millis(1500);
 /// How long a toast with an Undo button stays.
@@ -167,7 +167,7 @@ impl App {
         window.add_css_class("photos-window");
         // No client-side titlebar: Hyprland manages the window.
         window.set_titlebar(Some(&gtk::Box::new(gtk::Orientation::Horizontal, 0)));
-        window.set_icon_name(Some("io.github.nexus.photos"));
+        window.set_icon_name(Some("io.github.design_nexus.nixe.Photos"));
 
         let mut state = State::new(library::Library::load(roots), p.view_mode.clone());
         state.recompute();
@@ -944,7 +944,7 @@ impl App {
             return (
                 "folder-pictures-symbolic",
                 "No photos here yet".into(),
-                format!("Nexus Photos looks in {root}. Pick the folder where your photos are, or add photos there."),
+                format!("Photos looks in {root}. Pick the folder where your photos are, or add photos there."),
             );
         }
         if !s.query.trim().is_empty() {

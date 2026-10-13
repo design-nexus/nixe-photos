@@ -92,7 +92,7 @@ pub fn build(info: Info) -> (gtk::ScrolledWindow, gtk::Box) {
 }
 
 fn window_group() -> widgets::Group {
-    let group = widgets::group("Nexus Photos window", "");
+    let group = widgets::group("Photos window", "");
     let p = prefs::get();
     let omarchy = theme::omarchy_available();
     let following = omarchy && p.mode == prefs::ThemeMode::Omarchy;
@@ -273,17 +273,17 @@ fn viewing_group(on_layout: Rc<dyn Fn()>) -> widgets::Group {
 
 fn opening_group() -> widgets::Group {
     let group = widgets::group("Opening photos", "What a double-click or Enter on a photo opens.");
-    let installed = cmd::present("npv");
+    let installed = cmd::present("nixe-viewer");
     let desc = if installed {
-        "Nexus Photo Viewer (npv) opens the photo in its own light window, with buttons to bring it back here."
+        "Photo Viewer (nixe-viewer) opens the photo in its own light window, with buttons to bring it back here."
     } else {
-        "Nexus Photo Viewer (npv) isn't installed, so photos open in the built-in viewer."
+        "Photo Viewer (nixe-viewer) isn't installed, so photos open in the built-in viewer."
     };
     let current = if installed { prefs::get().open_with } else { "builtin".into() };
     let (row, _) = widgets::choice_row(
         "Open photos in",
         desc,
-        vec![("builtin".into(), "Built-in viewer".into()), ("viewer".into(), "Nexus Photo Viewer".into())],
+        vec![("builtin".into(), "Built-in viewer".into()), ("viewer".into(), "Photo Viewer".into())],
         &current,
         |with| prefs::update(|p| p.open_with = with),
     );
@@ -327,7 +327,7 @@ fn editing_group() -> widgets::Group {
 
     let (backup, _) = widgets::switch_row(
         "Back up originals before replacing",
-        "Keeps a copy in ~/.local/share/nexus-photos/backups.",
+        "Keeps a copy in ~/.local/share/nixe-photos/backups.",
         p.backup_originals,
         |on| prefs::update(|p| p.backup_originals = on),
     );

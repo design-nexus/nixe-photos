@@ -1,12 +1,12 @@
-//! Nexus Photos — a fast, keyboard-first photo gallery for Omarchy.
+//! Photos — a fast, keyboard-first photo gallery for Omarchy.
 
 use gtk::prelude::*;
 use gtk::{gio, glib};
-use nexus_photos::{library, window};
+use nixe_photos::{library, window};
 
-const APP_ID: &str = "io.github.nexus.photos";
+const APP_ID: &str = "io.github.design_nexus.nixe.Photos";
 
-const USAGE: &str = "Usage: nexus-photos [--section ID] [--edit] [FILE]
+const USAGE: &str = "Usage: nixe-photos [--section ID] [--edit] [FILE]
 
   FILE          open this photo or video (its folder is shown if it isn't in the library)
   --edit        with FILE, open it straight in the editor
@@ -17,21 +17,22 @@ const USAGE: &str = "Usage: nexus-photos [--section ID] [--edit] [FILE]
 ";
 
 fn main() -> glib::ExitCode {
-    nixe_core::app::init(nixe_core::app::App { slug: "nexus-photos", name: "Photos" });
+    nixe_core::app::init(nixe_core::app::App { slug: "nixe-photos", name: "Photos" });
+    nixe_core::migrate::from(&["nexus-photos"]);
     let args: Vec<String> = std::env::args().skip(1).collect();
     if args.iter().any(|a| a == "-h" || a == "--help") {
         print!("{USAGE}");
         return glib::ExitCode::SUCCESS;
     }
     if args.iter().any(|a| a == "-V" || a == "--version") {
-        println!("nexus-photos {}", env!("CARGO_PKG_VERSION"));
+        println!("nixe-photos {}", env!("CARGO_PKG_VERSION"));
         return glib::ExitCode::SUCCESS;
     }
 
     // One window: launching again hands the arguments to the open one.
     let mut flags = gio::ApplicationFlags::HANDLES_COMMAND_LINE;
     // For trying a build beside a running copy without taking it over.
-    if std::env::var_os("NEXUS_PHOTOS_STANDALONE").is_some() {
+    if std::env::var_os("NIXE_PHOTOS_STANDALONE").is_some() {
         flags |= gio::ApplicationFlags::NON_UNIQUE;
     }
     let app = gtk::Application::builder().application_id(APP_ID).flags(flags).build();

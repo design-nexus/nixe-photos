@@ -1,5 +1,5 @@
-//! Nexus Photos: the gallery (`nexus-photos`) and the stand-alone viewer
-//! (`npv`, Nexus Photo Viewer) share these modules.
+//! Photos: the gallery (`nixe-photos`) and the stand-alone viewer
+//! (`nixe-viewer`, Photo Viewer) share these modules.
 
 #![allow(clippy::new_without_default)]
 pub mod actions;

@@ -1,16 +1,16 @@
 [package]
-name = "nexus-photos"
+name = "nixe-photos"
 version = "0.3.0"
 description = "A fast, keyboard-first photo gallery for Omarchy"
 edition = "2024"
 
 [[bin]]
-name = "nexus-photos"
+name = "nixe-photos"
 path = "src/main.rs"
 
 [[bin]]
-name = "npv"
-path = "src/bin/npv.rs"
+name = "nixe-viewer"
+path = "src/bin/nixe-viewer.rs"
 
 [dependencies]
 nixe-core = { path = "../../crates/nixe-core" }

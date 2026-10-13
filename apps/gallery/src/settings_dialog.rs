@@ -8,7 +8,7 @@ pub use nixe_ui::settings_card::{close, escape, fit, focus_search, is_open};
 
 /// Each settings group's icon and one-line summary in the dialog's list.
 const GROUPS: &[(&str, &str, &str)] = &[
-    ("Nexus Photos window", "applications-graphics-symbolic", "Theme, glow, motion"),
+    ("Photos window", "applications-graphics-symbolic", "Theme, glow, motion"),
     ("Library", "folder-pictures-symbolic", "Folders, rescans"),
     ("Gallery and viewer", "view-grid-symbolic", "Layout, slideshows"),
     ("Opening photos", "document-open-symbolic", "Built-in viewer or Photo Viewer"),

@@ -20,7 +20,7 @@ pub fn rotations_file() -> PathBuf {
 
 /// What the last scan found, so the next start shows it at once.
 pub fn library_cache() -> PathBuf {
-    cache_home().join("nexus-photos/library.json")
+    cache_dir().join("library.json")
 }
 
 /// Originals kept before an edit replaced them.
@@ -29,6 +29,6 @@ pub fn backup_dir() -> PathBuf {
 }
 
 pub fn thumbnail_dir() -> PathBuf {
-    cache_home().join("nexus-photos/thumbnails")
+    cache_dir().join("thumbnails")
 }
 
