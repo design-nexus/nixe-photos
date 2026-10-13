@@ -1,6 +1,6 @@
 [package]
 name = "nixe-photos"
-version = "0.3.0"
+version = "0.1.0"
 description = "A fast, keyboard-first photo gallery for Omarchy"
 edition = "2024"
 
