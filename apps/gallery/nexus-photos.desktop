@@ -1,0 +1,13 @@
+[Desktop Entry]
+Name=Nexus Photos
+GenericName=Photo Gallery
+Comment=A fast, keyboard-first photo gallery
+Exec=nexus-photos %F
+Icon=io.github.nexus.photos
+Terminal=false
+Type=Application
+Categories=Graphics;Photography;Viewer;
+Keywords=photos;gallery;viewer;pictures;exif;albums;
+MimeType=image/jpeg;image/png;image/webp;image/tiff;image/bmp;image/gif;image/avif;
+StartupWMClass=io.github.nexus.photos
+StartupNotify=true

@@ -1,0 +1,1516 @@
+/* Photos — Nexus app style. One flat surface split by hairlines, monospace
+ * throughout. Every colour comes from the @theme_* tokens defined by the active
+ * palette (see theme.rs), or from the mixes of them below. */
+
+@define-color hairline mix(@theme_bg, @theme_border, 0.82);
+@define-color divider alpha(@theme_text, 0.08);
+@define-color nav_active mix(@theme_bg, @theme_accent, 0.18);
+@define-color row_hover mix(@theme_bg, @theme_accent, 0.07);
+@define-color lift mix(@theme_bg, @theme_muted, 0.09);
+@define-color lift_active mix(@lift, @theme_accent, 0.1);
+@define-color veil alpha(mix(@theme_bg, @theme_shadow, 0.45), 0.82);
+
+window.photos-window {
+  background: @theme_bg;
+  color: @theme_text;
+  font-family: "JetBrains Mono", "JetBrainsMono Nerd Font", monospace;
+  font-weight: 500;
+}
+
+window.photos-window,
+window.photos-window popover,
+window.photos-window dialog {
+  font-size: 1.0em;
+}
+
+.mono,
+.value-readout,
+.key-cap {
+  font-family: "JetBrains Mono", "JetBrainsMono Nerd Font", monospace;
+  font-feature-settings: "tnum";
+}
+
+.dim {
+  color: @theme_dim_text;
+}
+
+.accent-text {
+  color: @theme_accent;
+}
+
+
+/* Small capitals, for labels that sit above other content. */
+
+.settings-navigation .nav-group,
+.bar-section-title,
+.home-fact-title {
+  font-size: 0.72em;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  color: @theme_dim_text;
+}
+
+
+/* ---------- Sidebar ---------- */
+
+.settings-navigation {
+  background: @theme_bg;
+  min-width: 250px;
+  padding: 10px 6px;
+  border-right: 1px solid @hairline;
+}
+
+.settings-navigation.compact {
+  min-width: 0;
+  padding: 10px 6px;
+}
+
+.settings-navigation.compact button.nav-item {
+  min-width: 40px;
+  padding: 0;
+}
+
+.settings-navigation .nav-group {
+  margin: 10px -6px 4px;
+  padding: 16px 18px 4px;
+  border-top: 1px solid @hairline;
+  font-size: 0.76em;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: @theme_dim_text;
+}
+
+.settings-navigation button.nav-item {
+  min-height: 42px;
+  padding: 0 12px;
+  margin: 1px 0;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  color: @theme_text;
+  font-weight: 500;
+  transition: background 150ms ease-out, color 150ms ease-out;
+}
+
+.settings-navigation button.nav-item image {
+  color: @theme_dim_text;
+}
+
+.settings-navigation button.nav-item:hover {
+  background: @row_hover;
+}
+
+.settings-navigation button.nav-item.active {
+  background: @nav_active;
+  box-shadow: none;
+}
+
+.settings-navigation button.nav-item.active image {
+  color: @theme_accent;
+}
+
+.settings-navigation button.nav-item .nav-label {
+  font-weight: 500;
+}
+
+.settings-navigation button.nav-item.active .nav-label {
+  font-weight: 600;
+}
+
+.settings-navigation .nav-badge {
+  font-size: 0.68em;
+  padding: 0 6px;
+}
+
+
+/* ---------- Search ---------- */
+
+entry.settings-search,
+entry.settings-search > text {
+  min-height: 32px;
+}
+
+entry.settings-search {
+  margin: 0 0 14px;
+  padding: 0 12px;
+  border-radius: 6px;
+  background: transparent;
+  border: 1px solid @hairline;
+  box-shadow: none;
+  color: @theme_text;
+  outline: none;
+}
+
+entry.settings-search:focus-within {
+  border-color: @theme_accent;
+  box-shadow: none;
+}
+
+entry.settings-search image {
+  color: @theme_dim_text;
+}
+
+.search-empty {
+  padding: 96px 24px;
+}
+
+.search-empty image {
+  color: alpha(@theme_dim_text, 0.6);
+}
+
+.search-empty .search-empty-title {
+  font-size: 1.15em;
+  font-weight: 700;
+}
+
+
+/* ---------- Page ---------- */
+
+.settings-content {
+  background: @theme_bg;
+}
+
+.settings-page {
+  padding: 12px 24px 36px;
+}
+
+/* A page's first heading sits right under the top padding, so the space
+ * above it matches the space below it. */
+.settings-page > .settings-group:first-child > .group-title,
+.settings-page > .settings-group:first-child > .group-head,
+.settings-page > .settings-group:first-child > box:first-child > .group-title,
+.group-title.page-first,
+.group-head.page-first {
+  margin-top: 0;
+}
+
+.settings-page.narrow {
+  padding: 12px 16px 32px;
+}
+
+.section-title {
+  font-size: 1.3em;
+  font-weight: 700;
+  color: @theme_text;
+}
+
+
+/* ---------- Groups ---------- */
+
+.group-title {
+  margin: 26px 2px 12px;
+  font-size: 0.9em;
+  font-weight: 600;
+  letter-spacing: 2px;
+  color: @theme_dim_text;
+}
+
+.group-note {
+  margin: -6px 2px 12px;
+  font-size: 0.88em;
+  color: @theme_dim_text;
+}
+
+
+/* A collapsible group's title is a card row with a chevron; its rows open below. */
+
+.settings-group.collapsible {
+  margin-top: 12px;
+}
+
+window.photos-window button.group-toggle {
+  min-height: 32px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: mix(@theme_bg, @theme_muted, 0.25);
+  border: 1px solid @hairline;
+  box-shadow: none;
+}
+
+window.photos-window button.group-toggle:hover {
+  background: mix(@theme_bg, @theme_muted, 0.38);
+  border-color: alpha(@theme_border, 0.95);
+}
+
+window.photos-window button.group-toggle .settings-option-description {
+  font-weight: 400;
+}
+
+.settings-group.collapsible revealer > box {
+  padding-top: 8px;
+}
+
+image.chevron {
+  color: @theme_dim_text;
+  transition: -gtk-icon-transform 180ms ease-out;
+}
+
+.open image.chevron {
+  -gtk-icon-transform: rotate(90deg);
+}
+
+
+/* One card per group; its rows are split by hairlines. */
+
+.settings-card {
+  border: 1px solid @hairline;
+  border-radius: 10px;
+}
+
+.settings-card .card-row {
+  border-top: 1px solid @divider;
+}
+
+.settings-card > .card-row:first-child,
+.settings-card > :first-child > .card-row:first-child,
+.settings-card .card-row.first-shown {
+  border-top-color: transparent;
+}
+
+
+/* Plain text placed straight in a card (status lines, "nothing found"). */
+
+.settings-card > label,
+.settings-card > box > label {
+  padding: 12px 16px;
+}
+
+
+/* ---------- Rows ---------- */
+
+/* GTK's min-height is the content box: 32 + padding = 52. */
+
+.settings-option {
+  min-height: 52px;
+  padding: 10px 20px;
+}
+
+
+/* A row on its own, outside a card, keeps its own frame. */
+
+.settings-option:not(.card-row),
+.settings-page > .settings-option,
+.plain-list > .settings-option:not(.bare) {
+  border: 1px solid @hairline;
+  border-radius: 10px;
+}
+
+.settings-option.tall {
+  padding: 14px 20px;
+}
+
+
+/* A row that only carries its content (e.g. the theme grid in a plain group). */
+
+.settings-option.bare {
+  padding: 0;
+}
+
+.settings-option-title {
+  color: @theme_text;
+  font-weight: 700;
+}
+
+.settings-option-description {
+  color: @theme_dim_text;
+  font-size: 0.88em;
+}
+
+.settings-option-description link {
+  color: @theme_accent;
+}
+
+.value-readout {
+  color: @theme_text;
+  min-width: 64px;
+}
+
+
+/* ---------- Disclosure (a row that opens more rows) ---------- */
+
+window.photos-window button.disclosure {
+  min-height: 32px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+window.photos-window button.disclosure:hover {
+  background: alpha(@theme_highlight, 0.35);
+}
+
+window.photos-window button.disclosure .settings-option-description {
+  font-weight: 400;
+}
+
+.disclosure-content {
+  padding: 0 16px 12px;
+}
+
+.disclosure-content > .settings-option {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+
+/* A disclosure outside a card draws its own frame. */
+
+.disclosure-row:not(.card-row),
+.settings-page > .disclosure-row {
+  background: mix(@theme_bg, @theme_muted, 0.25);
+  border: 1px solid @hairline;
+  border-radius: 10px;
+}
+
+
+/* ---------- Buttons ---------- */
+
+window.photos-window button {
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 6px;
+  background: transparent;
+  border: 1px solid @hairline;
+  box-shadow: none;
+  color: @theme_text;
+  transition: background 150ms ease-out, border-color 150ms ease-out;
+}
+
+window.photos-window button:hover {
+  background: @row_hover;
+}
+
+window.photos-window button:active {
+  background: alpha(@theme_accent, 0.22);
+}
+
+window.photos-window button:disabled {
+  opacity: 0.45;
+}
+
+window.photos-window button.suggested-action {
+  background: @nav_active;
+  border-color: transparent;
+  color: @theme_text;
+  font-weight: 600;
+}
+
+window.photos-window button.suggested-action:hover {
+  background: mix(@theme_bg, @theme_accent, 0.26);
+}
+
+window.photos-window button.destructive-action {
+  background: alpha(@theme_danger, 0.12);
+  border-color: alpha(@theme_danger, 0.55);
+  color: @theme_danger;
+}
+
+
+/* The first click of a two-step button: the second one does it. */
+
+window.photos-window button.armed {
+  background: alpha(@theme_danger, 0.18);
+  border-color: @theme_danger;
+  color: @theme_danger;
+  font-weight: 600;
+}
+
+window.photos-window button.flat {
+  background: transparent;
+  border-color: transparent;
+}
+
+window.photos-window button.flat:hover {
+  background: @row_hover;
+}
+
+window.photos-window button.reset-button {
+  min-height: 26px;
+  min-width: 26px;
+  padding: 0;
+  border-radius: 999px;
+  color: @theme_dim_text;
+}
+
+window.photos-window button.chip {
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: 6px;
+  font-size: 0.9em;
+}
+
+window.photos-window button.chip.selected {
+  background: @nav_active;
+  border-color: transparent;
+  color: @theme_text;
+}
+
+
+/* ---------- Inputs ---------- */
+
+window.photos-window entry,
+window.photos-window spinbutton {
+  min-height: 32px;
+  border-radius: 6px;
+  background: transparent;
+  border: 1px solid @hairline;
+  box-shadow: none;
+  color: @theme_text;
+}
+
+window.photos-window entry:focus-within,
+window.photos-window spinbutton:focus-within {
+  border-color: @theme_accent;
+  box-shadow: none;
+}
+
+window.photos-window entry.error {
+  border-color: @theme_danger;
+}
+
+window.photos-window dropdown > button {
+  min-width: 160px;
+}
+
+window.photos-window popover > contents {
+  background: @theme_surface;
+  border: 1px solid alpha(@theme_border, 0.7);
+  border-radius: 9px;
+  box-shadow: 0 4px 16px alpha(@theme_shadow, 0.5);
+  color: @theme_text;
+  padding: 4px;
+}
+
+window.photos-window popover listview > row,
+window.photos-window popover list > row {
+  border-radius: 5px;
+  padding: 6px 10px;
+  color: @theme_text;
+}
+
+window.photos-window popover listview > row:hover,
+window.photos-window popover list > row:hover,
+window.photos-window popover listview > row:selected {
+  background: alpha(@theme_accent, 0.18);
+}
+
+window.photos-window switch {
+  min-width: 44px;
+  min-height: 26px;
+  border-radius: 999px;
+  background: alpha(@theme_muted, 0.3);
+  border: 1px solid @hairline;
+  box-shadow: none;
+}
+
+window.photos-window switch:checked {
+  background: mix(@theme_bg, @theme_accent, 0.25);
+}
+
+window.photos-window switch > slider {
+  min-width: 18px;
+  min-height: 18px;
+  margin: 3px;
+  border-radius: 999px;
+  background: @theme_dim_text;
+  border: none;
+  box-shadow: none;
+}
+
+window.photos-window switch:checked > slider {
+  background: @theme_accent;
+}
+
+window.photos-window scale {
+  padding: 8px 4px;
+}
+
+window.photos-window scale > trough {
+  min-height: 4px;
+  min-width: 4px;
+  border-radius: 999px;
+  background: alpha(@theme_muted, 0.8);
+  border: none;
+}
+
+window.photos-window scale > trough > highlight {
+  border-radius: 999px;
+  background: @theme_accent;
+}
+
+window.photos-window scale > trough > slider,
+window.photos-window scale.marks-before > trough > slider,
+window.photos-window scale.marks-after > trough > slider {
+  -gtk-icon-source: none;
+  background-image: none;
+  min-width: 16px;
+  min-height: 16px;
+  margin: -7px;
+  border-radius: 999px;
+  background: @theme_text;
+  border: 2px solid @theme_accent;
+  box-shadow: 0 0 10px alpha(@theme_glow, 0.35);
+}
+
+window.photos-window scale:disabled {
+  opacity: 0.5;
+}
+
+window.photos-window scale marks {
+  color: alpha(@theme_dim_text, 0.7);
+}
+
+window.photos-window scrollbar {
+  background: transparent;
+}
+
+window.photos-window scrollbar slider {
+  min-width: 6px;
+  border-radius: 999px;
+  background: alpha(@theme_muted, 0.9);
+}
+
+
+/* ---------- Segmented control ---------- */
+
+.segmented {
+  border-radius: 6px;
+  background: transparent;
+  border: 1px solid @hairline;
+  padding: 2px;
+}
+
+window.photos-window .segmented button.segment {
+  min-height: 28px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: alpha(@theme_text, 0.78);
+  font-weight: 600;
+  box-shadow: none;
+}
+
+window.photos-window .segmented button.segment:hover {
+  background: @row_hover;
+  color: @theme_text;
+}
+
+window.photos-window .segmented button.segment:checked {
+  background: @nav_active;
+  color: @theme_text;
+}
+
+
+/* ---------- Banners, toasts, dialogs ---------- */
+
+.banner {
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: alpha(@theme_accent, 0.12);
+  border: 1px solid alpha(@theme_accent, 0.45);
+  margin-bottom: 14px;
+}
+
+.banner.warning {
+  background: alpha(@theme_danger, 0.1);
+  border-color: alpha(@theme_danger, 0.45);
+}
+
+/* Buttons on a banner are its action: a solid accent, so they stand out on the tint. */
+window.photos-window .banner button {
+  background: @theme_accent;
+  border-color: @theme_accent;
+  color: @theme_on_accent;
+  font-weight: 600;
+}
+
+window.photos-window .banner button:hover {
+  background: mix(@theme_accent, @theme_text, 0.12);
+}
+
+window.photos-window .banner.warning button {
+  background: @theme_danger;
+  border-color: @theme_danger;
+}
+
+window.photos-window .banner.warning button:hover {
+  background: mix(@theme_danger, @theme_text, 0.12);
+}
+
+.settings-card .banner,
+.disclosure-content .banner {
+  margin: 8px 0;
+}
+
+.settings-group .banner {
+  margin: 0 0 8px;
+}
+
+.toast {
+  /* Above the player bar and the status bar. */
+  margin: 18px 18px 104px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: @theme_surface;
+  border: 1px solid alpha(@theme_border, 0.8);
+  box-shadow: 0 4px 16px alpha(@theme_shadow, 0.5), 0 0 14px alpha(@theme_glow, 0.14);
+}
+
+.dialog-card {
+  background: @theme_bg;
+  border: 1px solid alpha(@theme_border, 0.65);
+  border-radius: 14px;
+  box-shadow: 0 0 28px alpha(@theme_glow, 0.08);
+  padding: 24px;
+}
+
+.tag {
+  font-size: 0.72em;
+  font-weight: 700;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: alpha(@theme_muted, 0.55);
+  color: @theme_dim_text;
+}
+
+.key-cap {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.85em;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: alpha(@theme_muted, 0.55);
+  border: 1px solid alpha(@theme_border, 0.9);
+}
+
+
+/* ---------- Swatches ---------- */
+
+.swatch {
+  min-width: 16px;
+  min-height: 16px;
+  border-radius: 4px;
+  border: 1px solid alpha(@theme_shadow, 0.4);
+}
+
+
+/* ---------- Gallery ---------- */
+
+/* The gallery's toolbar sits on a hairline above the grid. */
+.gallery-bar {
+  min-height: 46px;
+  padding: 0 12px 0 14px;
+  border-bottom: 1px solid @hairline;
+}
+
+.gallery-bar .segmented {
+  margin: 0;
+}
+
+window.photos-window button.icon-button.active {
+  background: @nav_active;
+  color: @theme_text;
+}
+
+listview.gallery-list,
+listview.gallery-list > row {
+  background: transparent;
+  padding: 0;
+}
+
+.gallery-header {
+  margin: 16px 0 8px;
+}
+
+.gallery-header .group-title {
+  margin: 0;
+  font-size: 1.05em;
+  letter-spacing: 0;
+  color: @theme_text;
+}
+
+.gallery-sub {
+  font-size: 0.88em;
+}
+
+.photo-cell {
+  border-radius: 6px;
+  background: mix(@theme_bg, @theme_muted, 0.25);
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+  transition: outline-color 150ms ease-out;
+}
+
+.photo-cell:hover {
+  outline-color: alpha(@theme_accent, 0.45);
+}
+
+.photo-cell.cursor {
+  outline-color: alpha(@theme_accent, 0.72);
+}
+
+.photo-cell.selected {
+  outline-color: @theme_accent;
+  box-shadow: 0 0 14px alpha(@theme_glow, 0.24);
+}
+
+window.photos-window button.cell-star {
+  min-width: 28px;
+  min-height: 28px;
+  margin: 6px;
+  padding: 0;
+  border-radius: 999px;
+  border: none;
+  color: @theme_text;
+  background: alpha(@theme_shadow, 0.55);
+  opacity: 0;
+  transition: opacity 150ms ease-out, background 150ms ease-out;
+}
+
+.photo-cell:hover button.cell-star,
+window.photos-window button.cell-star.on {
+  opacity: 1;
+}
+
+window.photos-window button.cell-star.on {
+  color: @theme_accent;
+}
+
+window.photos-window button.cell-star:hover {
+  background: alpha(@theme_shadow, 0.8);
+  color: @theme_accent;
+}
+
+.cell-check {
+  margin: 6px;
+  padding: 3px;
+  border-radius: 999px;
+  color: @theme_on_accent;
+  background: @theme_accent;
+}
+
+.cell-badge {
+  margin: 6px;
+  color: @theme_text;
+  background: alpha(@theme_shadow, 0.65);
+}
+
+.status-bar {
+  min-height: 34px;
+  padding: 0 16px 0 10px;
+  border-top: 1px solid @hairline;
+  font-size: 0.86em;
+  color: @theme_dim_text;
+}
+
+
+/* ---------- Sidebar extras ---------- */
+
+.settings-navigation .nav-count {
+  font-size: 0.82em;
+  color: @theme_dim_text;
+}
+
+/* A group heading with a + button: the row carries the hairline. */
+.settings-navigation .nav-group-row {
+  margin: 10px -6px 4px;
+  padding: 10px 12px 0 0;
+  border-top: 1px solid @hairline;
+}
+
+.settings-navigation .nav-group-row .nav-group {
+  margin: 0;
+  border-top: none;
+}
+
+.settings-navigation.compact .nav-group-row {
+  margin: 8px -6px 4px;
+  padding: 8px 0 0;
+}
+
+
+/* ---------- Photo info drawer ---------- */
+
+.inspector {
+  background: @theme_surface;
+  border-left: 1px solid @hairline;
+}
+
+.inspector-head {
+  padding: 14px 12px 4px 16px;
+}
+
+.inspector-body {
+  padding: 4px 16px 20px;
+}
+
+.inspector-body .group-title {
+  margin: 16px 2px 6px;
+}
+
+.inspector-preview-frame {
+  border-radius: 10px;
+  background: alpha(@theme_bg, 0.65);
+  border: 1px solid @hairline;
+  padding: 6px;
+}
+
+.inspector-name {
+  margin: 10px 2px 0;
+  font-weight: 700;
+}
+
+.inspector-sub {
+  margin: 2px 2px 0;
+  font-size: 0.88em;
+}
+
+.detail-grid {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: mix(@theme_bg, @theme_muted, 0.25);
+  border: 1px solid @hairline;
+}
+
+.detail-key {
+  color: @theme_dim_text;
+  font-size: 0.9em;
+}
+
+.detail-value {
+  font-size: 0.9em;
+}
+
+window.photos-window button.action-button {
+  min-height: 32px;
+  padding: 0 10px;
+}
+
+window.photos-window button.action-button.danger {
+  color: @theme_danger;
+}
+
+.album-chips flowboxchild {
+  padding: 0;
+  background: none;
+}
+
+
+/* ---------- Viewer home ---------- */
+
+/* The stand-alone viewer with no photo: a drop zone and the recent photos. */
+.viewer-home {
+  background: @theme_bg;
+}
+
+.dropzone {
+  padding: 44px 24px;
+  border-radius: 14px;
+  border: 2px dashed alpha(@theme_border, 0.95);
+  transition: border-color 150ms ease-out, background 150ms ease-out, box-shadow 150ms ease-out;
+}
+
+.dropzone.drop-hover {
+  border-color: @theme_accent;
+  background: alpha(@theme_accent, 0.10);
+  box-shadow: 0 0 14px alpha(@theme_glow, 0.24);
+}
+
+.dropzone-icon {
+  color: @theme_accent;
+}
+
+.dropzone-title {
+  font-size: 1.25em;
+  font-weight: 700;
+}
+
+.recent-row {
+  border: 1px solid @hairline;
+  border-radius: 10px;
+  padding: 2px 6px 2px 2px;
+  transition: border-color 150ms ease-out;
+}
+
+.recent-row:hover {
+  border-color: alpha(@theme_border, 0.95);
+}
+
+window.photos-window .recent-row button.flat {
+  min-height: 48px;
+  padding: 4px 12px 4px 6px;
+}
+
+.recent-thumb {
+  border-radius: 6px;
+  background: @lift;
+}
+
+.recent-facts {
+  font-size: 0.82em;
+}
+
+window.photos-window button.small-button {
+  min-height: 26px;
+  padding: 0 8px;
+  font-size: 0.86em;
+  color: @theme_dim_text;
+}
+
+
+/* ---------- Viewer ---------- */
+
+.lightbox {
+  background: mix(@theme_bg, @theme_shadow, 0.7);
+}
+
+/* The stand-alone viewer's bar is solid, like the other top bars. */
+.lightbox .top-bar {
+  background: @theme_bg;
+}
+
+.lightbox-bar {
+  padding: 12px 16px 28px;
+  background: linear-gradient(to bottom, alpha(mix(@theme_bg, @theme_shadow, 0.7), 0.92), alpha(mix(@theme_bg, @theme_shadow, 0.7), 0));
+  transition: opacity 250ms ease-out;
+}
+
+
+/* The viewer's controls fade while the pointer rests. */
+
+.lightbox.idle .lightbox-bar,
+.lightbox.idle button.lightbox-nav,
+.lightbox.idle .filmstrip,
+.lightbox.idle .rotation-note {
+  opacity: 0;
+}
+
+window.photos-window .lightbox button.lightbox-nav,
+.filmstrip,
+.rotation-note {
+  transition: opacity 250ms ease-out;
+}
+
+.rotation-note {
+  padding: 6px 6px 6px 14px;
+  border-radius: 999px;
+  background: alpha(@theme_surface, 0.92);
+  border: 1px solid alpha(@theme_border, 0.7);
+  box-shadow: 0 4px 16px alpha(@theme_shadow, 0.4);
+}
+
+.filmstrip {
+  margin: 0 16px 16px;
+  padding: 6px;
+  border-radius: 12px;
+  background: alpha(@theme_surface, 0.82);
+}
+
+window.photos-window button.strip-item {
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background: transparent;
+  opacity: 0.6;
+}
+
+window.photos-window button.strip-item image {
+  margin: 2px;
+}
+
+window.photos-window button.strip-item:hover {
+  opacity: 1;
+}
+
+window.photos-window button.strip-item.current {
+  opacity: 1;
+  border-color: @theme_accent;
+}
+
+.lightbox-title {
+  font-weight: 700;
+}
+
+.lightbox-loading {
+  margin: 16px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: alpha(@theme_surface, 0.85);
+}
+
+window.photos-window button.lightbox-nav {
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0;
+  margin: 0 16px;
+  border-radius: 999px;
+  background: alpha(@theme_surface, 0.8);
+}
+
+
+/* ---------- Editor ---------- */
+
+.editor {
+  background: @theme_bg;
+}
+
+.editor-bar {
+  padding: 12px 16px;
+  border-bottom: 1px solid alpha(@theme_border, 0.45);
+}
+
+.editor-canvas {
+  background: mix(@theme_bg, @theme_surface, 0.5);
+}
+
+.editor-panel {
+  background: @theme_surface;
+  border-left: 1px solid @hairline;
+  padding: 12px 16px 0;
+}
+
+.editor-tools {
+  padding-bottom: 24px;
+}
+
+.editor-tools .group-title {
+  margin: 20px 4px 8px;
+}
+
+.editor-tools .group-title:first-child {
+  margin-top: 8px;
+}
+
+.slider-row scale {
+  padding: 4px 0;
+}
+
+.split-button > button:first-child {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.split-button > menubutton > button {
+  min-width: 28px;
+  padding: 0;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-left-color: alpha(@theme_on_accent, 0.3);
+}
+
+window.photos-window button.tool-button {
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0 8px;
+  background: alpha(@theme_muted, 0.32);
+  border: 1px solid alpha(@theme_border, 0.8);
+}
+
+window.photos-window button.chip:checked {
+  background: alpha(@theme_accent, 0.2);
+  border-color: alpha(@theme_accent, 0.8);
+}
+
+window.photos-window button.swatch-button {
+  min-width: 28px;
+  min-height: 28px;
+  padding: 3px;
+  border-radius: 999px;
+  background: transparent;
+  border: 2px solid transparent;
+}
+
+window.photos-window button.swatch-button:hover {
+  border-color: alpha(@theme_border, 0.95);
+}
+
+window.photos-window button.swatch-button.selected {
+  border-color: @theme_accent;
+  box-shadow: 0 0 10px alpha(@theme_glow, 0.35);
+}
+
+.swatch-dot {
+  min-width: 18px;
+  min-height: 18px;
+  border-radius: 999px;
+  border: 1px solid alpha(@theme_shadow, 0.5);
+}
+
+window.photos-window spinbutton > button {
+  min-width: 24px;
+  padding: 0;
+}
+
+window.photos-window spinbutton > text {
+  min-width: 0;
+}
+
+window.photos-window button.icon-button {
+  min-width: 28px;
+  padding: 0 6px;
+}
+
+.editor-tools .settings-option.tall {
+  padding: 10px 16px;
+}
+
+window.photos-window menubutton.icon-button > button {
+  min-width: 28px;
+  padding: 0 6px;
+  background: transparent;
+  border-color: transparent;
+}
+
+window.photos-window menubutton.icon-button > button:hover {
+  background: @row_hover;
+}
+
+
+/* ---------- Thumbnails fade in ---------- */
+
+.photo-cell > picture {
+  opacity: 0;
+  transition: opacity 180ms ease-out;
+}
+
+.photo-cell > picture.loaded {
+  opacity: 1;
+}
+
+.photo-cell > picture.instant {
+  transition: none;
+}
+
+
+/* ---------- Date scrubber ---------- */
+
+.scrubber {
+  margin: 8px 0;
+  border-radius: 8px 0 0 8px;
+  transition: background 150ms ease-out;
+}
+
+.scrubber.hover {
+  background: alpha(@theme_bg, 0.88);
+  box-shadow: -4px 0 12px alpha(@theme_shadow, 0.25);
+}
+
+.scrub-bubble {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.9em;
+  color: @theme_on_accent;
+  background: @theme_accent;
+  box-shadow: 0 2px 10px alpha(@theme_shadow, 0.4);
+}
+
+
+/* ---------- Toasts, photo info, dialogs ---------- */
+
+window.photos-window button.toast-action {
+  min-height: 28px;
+  margin: -4px -8px -4px 0;
+  padding: 0 12px;
+  font-weight: 700;
+  color: @theme_accent;
+}
+
+.histogram {
+  margin-top: 10px;
+  border-radius: 6px;
+  background: alpha(@theme_muted, 0.18);
+}
+
+window.photos-window button.folder-link {
+  margin-top: 8px;
+  padding: 4px 8px;
+  font-size: 0.88em;
+  color: @theme_dim_text;
+}
+
+window.photos-window button.folder-link:hover {
+  color: @theme_accent;
+}
+
+.map-link {
+  margin-top: 6px;
+}
+
+.mono-title .settings-option-title {
+  font-family: monospace;
+}
+
+
+/* ---------- Selection toolbar ---------- */
+
+.selection-chip {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.9em;
+  color: @theme_accent;
+  background: alpha(@theme_accent, 0.14);
+}
+
+.quick-actions {
+  padding: 0 6px;
+  margin: 0 2px;
+  border-left: 1px solid alpha(@theme_border, 0.6);
+  border-right: 1px solid alpha(@theme_border, 0.6);
+}
+
+window.photos-window button.icon-button.on {
+  color: @theme_accent;
+}
+
+window.photos-window button.icon-button.danger:hover {
+  color: @theme_danger;
+  background: alpha(@theme_danger, 0.12);
+}
+
+.album-row {
+  padding: 2px 2px 2px 10px;
+  border-radius: 6px;
+  background: alpha(@theme_muted, 0.18);
+}
+
+
+/* ---------- Top bar and status bar ---------- */
+
+.window-frame {
+  background: @theme_bg;
+}
+
+.top-bar {
+  min-height: 46px;
+  padding: 0 10px 0 12px;
+  border-bottom: 1px solid @hairline;
+}
+
+.crumbs {
+  margin-left: 8px;
+}
+
+.crumb-root,
+.crumb-sep {
+  color: @theme_dim_text;
+}
+
+.crumb {
+  color: @theme_accent;
+}
+
+window.photos-window button.bar-button {
+  min-width: 30px;
+  min-height: 30px;
+  padding: 0;
+  border-radius: 6px;
+  border-color: transparent;
+  background: transparent;
+  color: @theme_dim_text;
+}
+
+window.photos-window button.bar-button:hover {
+  background: @row_hover;
+  color: @theme_text;
+}
+
+/* A config-file menu in the top bar looks like the other bar buttons. */
+window.photos-window menubutton.bar-button > button {
+  min-width: 30px;
+  min-height: 30px;
+  padding: 0;
+  border-radius: 6px;
+  border-color: transparent;
+  background: transparent;
+  color: @theme_dim_text;
+}
+
+window.photos-window menubutton.bar-button > button:hover {
+  background: @row_hover;
+  color: @theme_text;
+}
+
+window.photos-window entry.bar-search {
+  min-height: 30px;
+  margin-right: 4px;
+}
+
+window.photos-window button.status-help {
+  min-height: 24px;
+  padding: 0 6px;
+  border: none;
+  background: transparent;
+  color: @theme_dim_text;
+  font-weight: 500;
+}
+
+window.photos-window button.status-help:hover {
+  color: @theme_text;
+}
+
+.status-key {
+  color: @theme_text;
+}
+
+.settings-navigation .nav-group.first {
+  margin-top: 0;
+  padding-top: 6px;
+  border-top: none;
+}
+
+.settings-navigation.compact .nav-group {
+  margin: 8px -6px;
+  padding: 0;
+  min-height: 0;
+  font-size: 0;
+}
+
+.settings-navigation.compact .nav-group.first {
+  border-top: none;
+  margin: 0;
+}
+
+.group-list {
+  border: 1px solid @hairline;
+  border-radius: 10px;
+}
+
+.group-list .settings-option {
+  border: none;
+  border-top: 1px solid @divider;
+  border-radius: 0;
+}
+
+.group-list > .settings-option:first-child,
+.group-list > box:first-child > .settings-option:first-child {
+  border-top: none;
+}
+
+
+/* Toolbar controls sit centred in the row instead of stretching to it. */
+
+.toolbar > *,
+.list-toolbar > * {
+  margin-top: 7px;
+  margin-bottom: 7px;
+}
+
+window.photos-window columnview > header,
+window.photos-window columnview > header > button,
+window.photos-window columnview > header > button > box {
+  font-size: 1em;
+}
+
+
+/* ---------- Settings dialog ---------- */
+
+.settings-veil {
+  background: @veil;
+}
+
+.settings-dialog {
+  background: @theme_bg;
+  border: 1px solid @hairline;
+  border-radius: 14px;
+  box-shadow: 0 8px 40px alpha(@theme_shadow, 0.6);
+}
+
+.settings-dialog-side {
+  min-width: 280px;
+  padding: 22px 14px;
+  border-right: 1px solid @hairline;
+}
+
+.settings-dialog.narrow .settings-dialog-side {
+  min-width: 200px;
+  padding: 18px 8px;
+}
+
+.settings-dialog.narrow .dialog-head {
+  padding: 0 12px 0 20px;
+}
+
+.settings-dialog.narrow .settings-dialog-main .settings-page {
+  padding: 16px 16px 24px;
+}
+
+.dialog-heading {
+  margin: 0 4px 16px;
+  font-size: 0.92em;
+  font-weight: 600;
+  letter-spacing: 2.5px;
+  color: @theme_dim_text;
+}
+
+window.photos-window button.dialog-nav {
+  min-height: 0;
+  padding: 10px 14px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+}
+
+window.photos-window button.dialog-nav image {
+  margin-top: 2px;
+  color: @theme_dim_text;
+}
+
+window.photos-window button.dialog-nav:hover {
+  background: @row_hover;
+}
+
+window.photos-window button.dialog-nav.active {
+  background: @lift_active;
+}
+
+window.photos-window button.dialog-nav.active image {
+  color: @theme_accent;
+}
+
+.dialog-nav-title {
+  font-weight: 600;
+  color: alpha(@theme_text, 0.82);
+}
+
+window.photos-window button.dialog-nav.active .dialog-nav-title {
+  color: @theme_text;
+}
+
+.dialog-nav-summary {
+  font-size: 0.86em;
+  color: @theme_dim_text;
+}
+
+.settings-dialog-main {
+  background: @lift;
+}
+
+.dialog-head {
+  min-height: 64px;
+  padding: 0 18px 0 32px;
+  border-bottom: 1px solid @hairline;
+}
+
+.dialog-title {
+  font-size: 1.2em;
+  font-weight: 600;
+}
+
+.dialog-empty {
+  color: @theme_dim_text;
+}
+
+.settings-dialog-main .settings-page {
+  padding: 28px 40px 40px;
+}
+
+.settings-dialog-main .settings-page.narrow {
+  padding: 20px 20px 28px;
+}

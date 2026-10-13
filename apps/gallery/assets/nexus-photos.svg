@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e1e2e"/>
+      <stop offset="100%" stop-color="#161622"/>
+    </linearGradient>
+    <linearGradient id="lensRingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#89b4fa"/>
+      <stop offset="100%" stop-color="#585b70"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Squircle Base matching Omarchy theme surface -->
+  <rect x="10" y="10" width="108" height="108" rx="26" ry="26" fill="url(#bgGrad)" stroke="#313244" stroke-width="1.5" filter="url(#shadow)"/>
+
+  <!-- Inner Subtle Border -->
+  <rect x="18" y="18" width="92" height="92" rx="20" ry="20" fill="none" stroke="#45475a" stroke-width="1" stroke-opacity="0.5"/>
+
+  <!-- Camera Aperture & Photo Emblem -->
+  <!-- Outer Aperture Ring -->
+  <circle cx="64" cy="58" r="28" fill="#181825" stroke="url(#lensRingGrad)" stroke-width="2.5"/>
+  <circle cx="64" cy="58" r="21" fill="#1e1e2e" stroke="#313244" stroke-width="1.5"/>
+
+  <!-- Subtle Theme Shutter Blades -->
+  <path d="M 64 37 L 78 50 L 71 54 Z" fill="#89b4fa" fill-opacity="0.45"/>
+  <path d="M 85 58 L 72 72 L 68 65 Z" fill="#89b4fa" fill-opacity="0.35"/>
+  <path d="M 64 79 L 50 66 L 57 62 Z" fill="#89b4fa" fill-opacity="0.45"/>
+  <path d="M 43 58 L 56 44 L 60 51 Z" fill="#89b4fa" fill-opacity="0.35"/>
+
+  <!-- Center Lens Pupil -->
+  <circle cx="64" cy="58" r="8" fill="#313244"/>
+  <circle cx="64" cy="58" r="6" fill="#89b4fa" fill-opacity="0.8"/>
+  <circle cx="62" cy="56" r="2" fill="#cdd6f4" fill-opacity="0.85"/>
+
+  <!-- Lower Gallery Strip Indicator (3 subtle theme pills) -->
+  <rect x="42" y="96" width="10" height="4" rx="2" fill="#585b70" fill-opacity="0.6"/>
+  <rect x="56" y="96" width="16" height="4" rx="2" fill="#89b4fa" fill-opacity="0.75"/>
+  <rect x="76" y="96" width="10" height="4" rx="2" fill="#585b70" fill-opacity="0.6"/>
+</svg>
