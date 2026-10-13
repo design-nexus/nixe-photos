@@ -93,6 +93,7 @@ pub fn build(info: Info) -> (gtk::ScrolledWindow, gtk::Box) {
 
 fn window_group() -> widgets::Group {
     let group = widgets::group("Photos window", "");
+    group.add(&nixe_ui::widgets::start_row());
     let p = prefs::get();
     let omarchy = theme::omarchy_available();
     let following = omarchy && p.mode == prefs::ThemeMode::Omarchy;

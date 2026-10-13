@@ -142,7 +142,7 @@ pub fn present(application: &gtk::Application, section: Option<&str>, open: Opti
     }
     APP.with(|slot| *slot.borrow_mut() = Some(a.clone()));
     let p = prefs::get();
-    let start = section.map(String::from).unwrap_or(p.last_section);
+    let start = section.map(String::from).unwrap_or_else(|| nixe_theme::start_page("all_photos", &p.last_section));
     a.navigate(&start);
     a.window.present();
     a.edit_when_opened.set(edit && open.is_some());
