@@ -50,6 +50,7 @@
   Albums, favourites and view rotations: `~/.local/share/nixe-photos/`. `export.rs` writes
   smaller/converted copies; deleting trashes with an Undo toast (`library::untrash`). User themes:
   `~/.config/nixe-photos/themes/*.toml`.
+- Control (`src/control.rs`): `nixe_core::control` on the Photos bus name, for Nixe Assistant: `photos.search`, `albums`, `open` (`window::with_library`, `window::open_photo`).
 - Checks: `cargo clippy -- -D warnings`, `cargo test`. Every path honours the XDG
   variables, so `XDG_CONFIG_HOME`, `XDG_DATA_HOME` and `XDG_CACHE_HOME` can point at a
   scratch directory to try the app without touching real data (with

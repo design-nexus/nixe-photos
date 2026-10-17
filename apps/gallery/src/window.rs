@@ -104,6 +104,22 @@ fn app() -> Option<Rc<App>> {
     APP.with(|a| a.borrow().clone())
 }
 
+/// Read the photo library (the control interface uses it), once the window is up.
+pub fn with_library<R>(f: impl FnOnce(&library::Library) -> R) -> Option<R> {
+    app().map(|a| f(&a.state.borrow().lib))
+}
+
+/// Show a photo in the viewer, as if it had been opened from the command line.
+pub fn open_photo(path: PathBuf) -> bool {
+    match app() {
+        Some(a) => {
+            a.open_path(path);
+            true
+        }
+        None => false,
+    }
+}
+
 pub fn window() -> Option<gtk::ApplicationWindow> {
     app().map(|a| a.window.clone())
 }

@@ -5,6 +5,7 @@
 pub mod actions;
 pub use nixe_ui::clamp;
 pub mod cmd;
+pub mod control;
 pub mod dialog;
 pub mod edit;
 pub mod editor;

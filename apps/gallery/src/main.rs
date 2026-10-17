@@ -2,7 +2,7 @@
 
 use gtk::prelude::*;
 use gtk::{gio, glib};
-use nixe_photos::{library, window};
+use nixe_photos::{control, library, window};
 
 const APP_ID: &str = "io.github.design_nexus.nixe.Photos";
 
@@ -36,6 +36,8 @@ fn main() -> glib::ExitCode {
         flags |= gio::ApplicationFlags::NON_UNIQUE;
     }
     let app = gtk::Application::builder().application_id(APP_ID).flags(flags).build();
+    // Nixe Assistant finds and shows photos through this (primary instance only).
+    app.connect_startup(|app| nixe_core::control::serve(app, control::tools(), control::handle));
     app.connect_command_line(|app, cl| {
         let argv: Vec<String> = cl.arguments().iter().skip(1).map(|a| a.to_string_lossy().to_string()).collect();
         let section = argv.iter().position(|a| a == "--section").and_then(|i| argv.get(i + 1)).cloned();
