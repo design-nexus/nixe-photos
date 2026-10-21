@@ -1,0 +1,10 @@
+{
+  "application": "photos",
+  "directory": "gallery",
+  "packages": [
+    "nixe-photos"
+  ],
+  "manifest": "Cargo.toml",
+  "prepare": [],
+  "binaries": []
+}
