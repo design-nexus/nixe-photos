@@ -26,7 +26,7 @@ Omarchy theme live, groups photos on a timeline, and shows EXIF details in a sid
 ## Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/design-nexus/nixe/main/install.sh | bash -s -- photos
+curl -fsSL https://raw.githubusercontent.com/design-nexus/nixe-photos/main/install.sh | bash -s -- photos
 ```
 
 This builds Photos with Cargo (installing Rust and GTK 4 with pacman if needed) and
