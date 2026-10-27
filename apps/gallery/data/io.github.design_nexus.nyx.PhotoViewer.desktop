@@ -2,12 +2,12 @@
 Name=Photo Viewer
 GenericName=Photo Viewer
 Comment=Look at a photo with minimal chrome
-Exec=nixe-viewer %f
-Icon=io.github.design_nexus.nixe.PhotoViewer
+Exec=nyx-viewer %f
+Icon=io.github.design_nexus.nyx.PhotoViewer
 Terminal=false
 Type=Application
 Categories=Graphics;Photography;Viewer;
 Keywords=photos;viewer;pictures;image;
 MimeType=image/jpeg;image/png;image/webp;image/tiff;image/bmp;image/gif;image/avif;image/heic;image/heif;image/svg+xml;image/x-icon;
-StartupWMClass=io.github.design_nexus.nixe.PhotoViewer
+StartupWMClass=io.github.design_nexus.nyx.PhotoViewer
 StartupNotify=true

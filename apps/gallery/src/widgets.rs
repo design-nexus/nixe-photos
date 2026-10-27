@@ -1,6 +1,6 @@
 //! Small building blocks shared by the views: labels, option rows, cards, buttons.
 
-pub use nixe_ui::widgets::*;
+pub use nyx_ui::widgets::*;
 
 use crate::{cmd, paths};
 use gtk::prelude::*;

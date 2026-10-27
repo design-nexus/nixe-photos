@@ -607,7 +607,7 @@ mod favorites_flow {
 
     #[test]
     fn a_favourited_photo_shows_in_the_favorites_section() {
-        let dir = std::env::temp_dir().join(format!("nixe-photos-fav-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("nyx-photos-fav-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         // SAFETY: only this test touches the environment, before anything reads it.
         unsafe { std::env::set_var("XDG_DATA_HOME", &dir) };

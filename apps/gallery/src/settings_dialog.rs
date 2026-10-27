@@ -2,9 +2,9 @@
 //! chosen group's options on the right, and a search across all of them.
 
 use gtk::prelude::*;
-use nixe_ui::settings_card::{self, Spec};
+use nyx_ui::settings_card::{self, Spec};
 
-pub use nixe_ui::settings_card::{close, escape, fit, focus_search, is_open};
+pub use nyx_ui::settings_card::{close, escape, fit, focus_search, is_open};
 
 /// Each settings group's icon and one-line summary in the dialog's list.
 const GROUPS: &[(&str, &str, &str)] = &[

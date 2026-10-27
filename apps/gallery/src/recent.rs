@@ -1,4 +1,4 @@
-//! Photos the viewer opened recently (`~/.local/share/nixe-photos/recent.json`).
+//! Photos the viewer opened recently (`~/.local/share/nyx-photos/recent.json`).
 
 use crate::{cmd, paths};
 use std::path::{Path, PathBuf};

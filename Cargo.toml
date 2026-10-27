@@ -6,7 +6,7 @@ members = ["apps/gallery"]
 edition = "2024"
 license = "MIT"
 authors = ["Ken Smith"]
-repository = "https://github.com/design-nexus/nixe-photos"
+repository = "https://github.com/design-nexus/nyx-photos"
 
 [profile.release]
 lto = "thin"

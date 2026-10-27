@@ -2,7 +2,7 @@
   "application": "photos",
   "directory": "gallery",
   "packages": [
-    "nixe-photos"
+    "nyx-photos"
   ],
   "manifest": "Cargo.toml",
   "prepare": [],
@@ -13,9 +13,9 @@
       "test",
       "--locked",
       "-p",
-      "nixe-photos",
+      "nyx-photos",
       "--bin",
-      "nixe-photos"
+      "nyx-photos"
     ]
   ]
 }

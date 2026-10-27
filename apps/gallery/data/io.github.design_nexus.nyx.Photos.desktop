@@ -2,12 +2,12 @@
 Name=Photos
 GenericName=Photo Gallery
 Comment=A fast, keyboard-first photo gallery
-Exec=nixe-photos %F
-Icon=io.github.design_nexus.nixe.Photos
+Exec=nyx-photos %F
+Icon=io.github.design_nexus.nyx.Photos
 Terminal=false
 Type=Application
 Categories=Graphics;Photography;Viewer;
 Keywords=photos;gallery;viewer;pictures;exif;albums;
 MimeType=image/jpeg;image/png;image/webp;image/tiff;image/bmp;image/gif;image/avif;
-StartupWMClass=io.github.design_nexus.nixe.Photos
+StartupWMClass=io.github.design_nexus.nyx.Photos
 StartupNotify=true

@@ -88,7 +88,7 @@ impl Lightbox {
             back.add_css_class("bar-button");
             back.set_tooltip_text(Some("Open in the gallery (G)"));
             back.set_valign(gtk::Align::Center);
-            back.set_visible(crate::cmd::present("nixe-photos"));
+            back.set_visible(crate::cmd::present("nyx-photos"));
         } else {
             back.set_child(Some(&widgets::button_content("go-previous-symbolic", "Back to gallery")));
             back.set_tooltip_text(Some("Esc"));
@@ -115,7 +115,7 @@ impl Lightbox {
         top.append(&zoom_label);
         let favorite = widgets::icon_button("non-starred-symbolic", "Favorite (F)");
         let edit = widgets::icon_button("document-edit-symbolic", if standalone { "Edit in gallery (E)" } else { "Edit (E)" });
-        edit.set_visible(!standalone || crate::cmd::present("nixe-photos"));
+        edit.set_visible(!standalone || crate::cmd::present("nyx-photos"));
         let rotate = widgets::icon_button("object-rotate-right-symbolic", "Rotate 90° (R)");
         let slideshow = widgets::icon_button("media-playback-start-symbolic", "Slideshow (S)");
         let copy = widgets::icon_button("edit-copy-symbolic", "Copy image (Ctrl+C)");

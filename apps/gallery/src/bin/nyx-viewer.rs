@@ -1,27 +1,27 @@
-//! Photo Viewer (`nixe-viewer`) — one folder of photos in a light window, with a way into
+//! Photo Viewer (`nyx-viewer`) — one folder of photos in a light window, with a way into
 //! the gallery. It shares the gallery's viewer, favourites and rotations.
 
 use gtk::prelude::*;
 use gtk::{gdk, glib};
-use nixe_photos::clamp::Clamp;
-use nixe_photos::grid::{self, CellData};
-use nixe_photos::library::{self, Library};
-use nixe_photos::lightbox::{self, Action, Lightbox};
-use nixe_photos::models::{PhotoItem, photo_id};
-use nixe_photos::scanner::IMAGE_EXTENSIONS;
-use nixe_photos::widgets::{self, hbox};
-use nixe_photos::{actions, cmd, dialog, metadata, recent, theme, thumbnails};
+use nyx_photos::clamp::Clamp;
+use nyx_photos::grid::{self, CellData};
+use nyx_photos::library::{self, Library};
+use nyx_photos::lightbox::{self, Action, Lightbox};
+use nyx_photos::models::{PhotoItem, photo_id};
+use nyx_photos::scanner::IMAGE_EXTENSIONS;
+use nyx_photos::widgets::{self, hbox};
+use nyx_photos::{actions, cmd, dialog, metadata, recent, theme, thumbnails};
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::rc::{Rc, Weak};
 use std::time::Duration;
 
-const APP_ID: &str = "io.github.design_nexus.nixe.PhotoViewer";
+const APP_ID: &str = "io.github.design_nexus.nyx.PhotoViewer";
 const NAME: &str = "Photo Viewer";
-const GALLERY: &str = "nixe-photos";
+const GALLERY: &str = "nyx-photos";
 
-const USAGE: &str = "Usage: nixe-viewer [FILE]
+const USAGE: &str = "Usage: nyx-viewer [FILE]
 
   FILE          the photo to show; ← and → move through its folder.
                 Without one, the window offers to open a photo.
@@ -54,15 +54,15 @@ const SHORTCUTS: &dialog::Shortcuts = &[(
 
 fn main() -> glib::ExitCode {
     // The viewer shares the gallery's settings, recents and caches.
-    nixe_core::app::init(nixe_core::app::App { slug: "nixe-photos", name: "Photo Viewer" });
-    nixe_core::migrate::from(&["nexus-photos"]);
+    nyx_core::app::init(nyx_core::app::App { slug: "nyx-photos", name: "Photo Viewer" });
+    nyx_core::migrate::from(&["nexus-photos"]);
     let args: Vec<String> = std::env::args().skip(1).collect();
     if args.iter().any(|a| a == "-h" || a == "--help") {
         print!("{USAGE}");
         return glib::ExitCode::SUCCESS;
     }
     if args.iter().any(|a| a == "-V" || a == "--version") {
-        println!("nixe-viewer {}", env!("CARGO_PKG_VERSION"));
+        println!("nyx-viewer {}", env!("CARGO_PKG_VERSION"));
         return glib::ExitCode::SUCCESS;
     }
     // Every photo gets its own window and process.
@@ -73,7 +73,7 @@ fn main() -> glib::ExitCode {
         let file = library::file_argument(&argv);
         // A name that isn't a file is a mistake; no name at all is fine.
         if file.is_none() && argv.iter().any(|a| !a.starts_with('-')) {
-            eprintln!("nixe-viewer: no such file: {}\n\n{USAGE}", argv.iter().find(|a| !a.starts_with('-')).unwrap());
+            eprintln!("nyx-viewer: no such file: {}\n\n{USAGE}", argv.iter().find(|a| !a.starts_with('-')).unwrap());
             return glib::ExitCode::FAILURE;
         }
         build(app, file);
@@ -135,7 +135,7 @@ fn build(app: &gtk::Application, file: Option<PathBuf>) {
     window.add_css_class("photos-window");
     // No client-side titlebar: Hyprland manages the window.
     window.set_titlebar(Some(&gtk::Box::new(gtk::Orientation::Horizontal, 0)));
-    window.set_icon_name(Some("io.github.design_nexus.nixe.PhotoViewer"));
+    window.set_icon_name(Some("io.github.design_nexus.nyx.PhotoViewer"));
 
     let lightbox = Lightbox::new(lightbox::Mode::Standalone);
     let home = home_page();
@@ -145,24 +145,24 @@ fn build(app: &gtk::Application, file: Option<PathBuf>) {
     pages.set_vexpand(true);
 
     // The bar along the bottom: the shortcuts on the left, the photo's folder on the right.
-    let status = nixe_photos::widgets::hbox(16);
+    let status = nyx_photos::widgets::hbox(16);
     status.add_css_class("status-bar");
     let help = gtk::Button::new();
     help.add_css_class("status-help");
-    let help_content = nixe_photos::widgets::hbox(10);
-    help_content.append(&nixe_photos::widgets::label("F1", "status-key"));
-    help_content.append(&nixe_photos::widgets::label("Shortcuts", ""));
+    let help_content = nyx_photos::widgets::hbox(10);
+    help_content.append(&nyx_photos::widgets::label("F1", "status-key"));
+    help_content.append(&nyx_photos::widgets::label("Shortcuts", ""));
     help.set_child(Some(&help_content));
     help.set_tooltip_text(Some("Show the keyboard shortcuts"));
     help.connect_clicked(|_| dialog::show_shortcuts(SHORTCUTS));
     status.append(&help);
-    let folder = nixe_photos::widgets::label("", "status-readout");
+    let folder = nyx_photos::widgets::label("", "status-readout");
     folder.set_hexpand(true);
     folder.set_xalign(1.0);
     folder.set_ellipsize(gtk::pango::EllipsizeMode::Start);
     status.append(&folder);
 
-    let frame = nixe_photos::widgets::vbox(0);
+    let frame = nyx_photos::widgets::vbox(0);
     frame.add_css_class("window-frame");
     frame.append(&pages);
     frame.append(&status);
@@ -364,7 +364,7 @@ fn recent_row(path: &Path, open: impl Fn(&Path) + 'static) -> gtk::Box {
     let name = widgets::label(&path.file_name().unwrap_or_default().to_string_lossy(), "settings-option-title");
     name.set_xalign(0.0);
     name.set_ellipsize(gtk::pango::EllipsizeMode::Middle);
-    let dir = widgets::label(&path.parent().map(nixe_photos::paths::pretty).unwrap_or_default(), "mono");
+    let dir = widgets::label(&path.parent().map(nyx_photos::paths::pretty).unwrap_or_default(), "mono");
     dir.add_css_class("settings-option-description");
     dir.set_xalign(0.0);
     dir.set_ellipsize(gtk::pango::EllipsizeMode::Start);
@@ -497,12 +497,12 @@ impl Viewer {
         // After `show`: a stack won't switch to a page that is still hidden.
         self.pages.set_visible_child_name("photo");
         self.window.set_title(Some(&format!("{} — {NAME}", photo.file_name)));
-        self.folder.set_text(&files[at].parent().map(nixe_photos::paths::pretty).unwrap_or_default());
+        self.folder.set_text(&files[at].parent().map(nyx_photos::paths::pretty).unwrap_or_default());
         let n = files.len();
         if n > 1 {
             for i in [(at + 1) % n, (at + n - 1) % n] {
                 let p = &files[i];
-                nixe_photos::stage::preload(&p.to_string_lossy(), lib.rotation(&photo_id(&p.to_string_lossy())));
+                nyx_photos::stage::preload(&p.to_string_lossy(), lib.rotation(&photo_id(&p.to_string_lossy())));
             }
         }
     }
@@ -650,7 +650,7 @@ impl Viewer {
         if self.lightbox.is_playing() {
             self.lightbox.stop_slideshow();
         } else {
-            self.lightbox.start_slideshow(nixe_photos::prefs::get().slideshow_seconds);
+            self.lightbox.start_slideshow(nyx_photos::prefs::get().slideshow_seconds);
         }
     }
 
@@ -745,7 +745,7 @@ impl Viewer {
     }
 
     /// A message at the bottom, with an optional button (Undo).
-    fn toast(&self, message: &str, action: Option<nixe_photos::widgets::ButtonAction>) {
+    fn toast(&self, message: &str, action: Option<nyx_photos::widgets::ButtonAction>) {
         let overlay = self.overlay.clone();
         if let Some(old) = self.toast.borrow_mut().take() {
             overlay.remove_overlay(&old);

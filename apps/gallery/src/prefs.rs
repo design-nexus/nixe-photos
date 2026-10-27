@@ -1,6 +1,6 @@
-//! This app's own preferences (`~/.config/nixe-photos/settings.toml`).
+//! This app's own preferences (`~/.config/nyx-photos/settings.toml`).
 
-pub use nixe_theme::ThemeMode;
+pub use nyx_theme::ThemeMode;
 
 use serde::{Deserialize, Serialize};
 
@@ -20,7 +20,7 @@ pub struct Prefs {
     pub zoom: f64,
     pub inspector_open: bool,
     /// Where a double-clicked photo opens: `builtin` (the gallery's viewer) or `viewer`
-    /// (Photo Viewer, `nixe-viewer`).
+    /// (Photo Viewer, `nyx-viewer`).
     pub open_with: String,
     /// What the editor's Save button does: `copy` or `replace`.
     pub save_mode: String,
@@ -59,7 +59,7 @@ impl Default for Prefs {
     }
 }
 
-nixe_core::prefs_store!(Prefs);
+nyx_core::prefs_store!(Prefs);
 
 #[cfg(test)]
 mod tests {

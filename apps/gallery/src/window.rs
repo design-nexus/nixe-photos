@@ -11,7 +11,7 @@ use crate::state::{LIBRARY_SECTIONS, MEDIA_SECTIONS, State};
 use crate::widgets::{self, hbox, label, vbox};
 use crate::{cmd, dialog, library, paths, prefs, settings_dialog, settings_view, theme};
 use gtk::prelude::*;
-use nixe_ui::chrome;
+use nyx_ui::chrome;
 use gtk::{gdk, gio, glib};
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
@@ -20,7 +20,7 @@ use std::rc::Rc;
 use std::time::Duration;
 
 const APP_NAME: &str = "Photos";
-const VIEWER: &str = "nixe-viewer";
+const VIEWER: &str = "nyx-viewer";
 /// How long after the last change in a watched folder it is scanned again.
 const RESCAN_AFTER: Duration = Duration::from_millis(1500);
 /// How long a toast with an Undo button stays.
@@ -158,7 +158,7 @@ pub fn present(application: &gtk::Application, section: Option<&str>, open: Opti
     }
     APP.with(|slot| *slot.borrow_mut() = Some(a.clone()));
     let p = prefs::get();
-    let start = section.map(String::from).unwrap_or_else(|| nixe_theme::start_page("all_photos", &p.last_section));
+    let start = section.map(String::from).unwrap_or_else(|| nyx_theme::start_page("all_photos", &p.last_section));
     a.navigate(&start);
     a.window.present();
     a.edit_when_opened.set(edit && open.is_some());
@@ -182,8 +182,8 @@ impl App {
         window.add_css_class("photos-window");
         // No client-side titlebar: Hyprland manages the window.
         window.set_titlebar(Some(&gtk::Box::new(gtk::Orientation::Horizontal, 0)));
-        nixe_ui::keys::install(&window, nixe_ui::keys::Common::default());
-        window.set_icon_name(Some("io.github.design_nexus.nixe.Photos"));
+        nyx_ui::keys::install(&window, nyx_ui::keys::Common::default());
+        window.set_icon_name(Some("io.github.design_nexus.nyx.Photos"));
 
         let mut state = State::new(library::Library::load(roots), p.view_mode.clone());
         state.recompute();

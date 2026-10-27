@@ -93,7 +93,7 @@ pub fn build(info: Info) -> (gtk::ScrolledWindow, gtk::Box) {
 
 fn window_group() -> widgets::Group {
     let group = widgets::group("Photos window", "");
-    group.add(&nixe_ui::widgets::start_row());
+    group.add(&nyx_ui::widgets::start_row());
     let p = prefs::get();
     let omarchy = theme::omarchy_available();
     let following = omarchy && p.mode == prefs::ThemeMode::Omarchy;
@@ -274,11 +274,11 @@ fn viewing_group(on_layout: Rc<dyn Fn()>) -> widgets::Group {
 
 fn opening_group() -> widgets::Group {
     let group = widgets::group("Opening photos", "What a double-click or Enter on a photo opens.");
-    let installed = cmd::present("nixe-viewer");
+    let installed = cmd::present("nyx-viewer");
     let desc = if installed {
-        "Photo Viewer (nixe-viewer) opens the photo in its own light window, with buttons to bring it back here."
+        "Photo Viewer (nyx-viewer) opens the photo in its own light window, with buttons to bring it back here."
     } else {
-        "Photo Viewer (nixe-viewer) isn't installed, so photos open in the built-in viewer."
+        "Photo Viewer (nyx-viewer) isn't installed, so photos open in the built-in viewer."
     };
     let current = if installed { prefs::get().open_with } else { "builtin".into() };
     let (row, _) = widgets::choice_row(
@@ -328,7 +328,7 @@ fn editing_group() -> widgets::Group {
 
     let (backup, _) = widgets::switch_row(
         "Back up originals before replacing",
-        "Keeps a copy in ~/.local/share/nixe-photos/backups.",
+        "Keeps a copy in ~/.local/share/nyx-photos/backups.",
         p.backup_originals,
         |on| prefs::update(|p| p.backup_originals = on),
     );

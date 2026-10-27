@@ -1,9 +1,9 @@
-//! Photos: the gallery (`nixe-photos`) and the stand-alone viewer
-//! (`nixe-viewer`, Photo Viewer) share these modules.
+//! Photos: the gallery (`nyx-photos`) and the stand-alone viewer
+//! (`nyx-viewer`, Photo Viewer) share these modules.
 
 #![allow(clippy::new_without_default)]
 pub mod actions;
-pub use nixe_ui::clamp;
+pub use nyx_ui::clamp;
 pub mod cmd;
 pub mod control;
 pub mod dialog;

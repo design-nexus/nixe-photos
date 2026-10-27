@@ -1,10 +1,10 @@
-//! Photos' tools on the control interface (`nixe_core::control`), for Nixe Assistant: find
+//! Photos' tools on the control interface (`nyx_core::control`), for Nyx Assistant: find
 //! photos by name, date, camera, album or favourite, list albums, and show a photo. Nothing
 //! is moved, edited or deleted.
 
 use crate::models::PhotoItem;
 use crate::window;
-use nixe_core::control::{self, text};
+use nyx_core::control::{self, text};
 use serde_json::{json, Value};
 
 pub fn tools() -> Value {
