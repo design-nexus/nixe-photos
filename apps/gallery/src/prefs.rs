@@ -34,6 +34,9 @@ pub struct Prefs {
     pub layout: String,
     /// Seconds each photo shows for in a slideshow.
     pub slideshow_seconds: u32,
+    /// Moved to the 2.0 defaults once (justified thumbnails); after that the choice is
+    /// the user's.
+    pub design_2: bool,
 }
 
 impl Default for Prefs {
@@ -53,8 +56,9 @@ impl Default for Prefs {
             jpeg_quality: 92,
             backup_originals: true,
             folders: Vec::new(),
-            layout: "square".into(),
+            layout: "justified".into(),
             slideshow_seconds: 4,
+            design_2: true,
         }
     }
 }
@@ -72,5 +76,13 @@ mod tests {
         assert_eq!(old.open_with, "builtin");
         let set: Prefs = toml::from_str("open_with = \"viewer\"").unwrap();
         assert_eq!(set.open_with, "viewer");
+    }
+
+    #[test]
+    fn settings_from_before_2_0_are_moved_once() {
+        let old: Prefs = toml::from_str("layout = \"square\"\ndesign_2 = false").unwrap();
+        assert!(!old.design_2);
+        assert_eq!(Prefs::default().layout, "justified");
+        assert!(Prefs::default().design_2);
     }
 }

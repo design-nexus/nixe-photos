@@ -65,6 +65,16 @@ struct Inner {
     slideshow_timer: RefCell<Option<glib::SourceId>>,
     /// Where the pointer last was, to tell real movement from the events a redraw causes.
     pointer: Cell<(f64, f64)>,
+    /// Stand-alone: the bar's parts, for the window's header to hold.
+    header_parts: RefCell<Option<HeaderParts>>,
+}
+
+/// The stand-alone viewer's controls, placed in the window's 2.0 header: the button
+/// back to the gallery, the photo's name and place in its folder, and the actions.
+pub struct HeaderParts {
+    pub start: gtk::Button,
+    pub center: gtk::Box,
+    pub end: gtk::Box,
 }
 
 #[derive(Clone)]
@@ -102,17 +112,16 @@ impl Lightbox {
         titles.set_hexpand(true);
         titles.set_halign(gtk::Align::Start);
         if standalone {
-            titles.add_css_class("crumbs");
+            titles.add_css_class("viewer-title");
             name.set_margin_start(0);
-            titles.append(&label("Photo Viewer", "crumb-root"));
-            titles.append(&label("/", "crumb-sep"));
+            name.add_css_class("viewer-name");
+            position.add_css_class("viewer-position");
         }
         titles.append(&name);
         titles.append(&position);
         top.append(&titles);
         let zoom_label = label("", "dim mono");
         zoom_label.set_valign(gtk::Align::Center);
-        top.append(&zoom_label);
         let favorite = widgets::icon_button("non-starred-symbolic", "Favorite (F)");
         let edit = widgets::icon_button("document-edit-symbolic", if standalone { "Edit in gallery (E)" } else { "Edit (E)" });
         edit.set_visible(!standalone || crate::cmd::present("nyx-photos"));
@@ -123,11 +132,20 @@ impl Lightbox {
         wallpaper.set_visible(crate::actions::can_set_background());
         let reveal = widgets::icon_button("folder-open-symbolic", "Reveal in file manager (Ctrl+O)");
         let close = widgets::icon_button("window-close-symbolic", "Close (Esc)");
-        for b in [&favorite, &edit, &rotate, &slideshow, &copy, &wallpaper, &reveal, &close] {
+        // Stand-alone, the header gets these; Esc and the window's own controls close it.
+        let end = hbox(if standalone { 4 } else { 8 });
+        end.append(&zoom_label);
+        for b in [&favorite, &edit, &rotate, &slideshow, &copy, &wallpaper, &reveal] {
             if standalone {
                 b.add_css_class("bar-button");
             }
-            top.append(b);
+            end.append(b);
+        }
+        if standalone {
+            close.set_visible(false);
+        } else {
+            top.append(&end);
+            top.append(&close);
         }
 
         let stage = Stage::new(zoom_label.clone());
@@ -143,13 +161,18 @@ impl Lightbox {
         play.set_valign(gtk::Align::Center);
         play.set_visible(false);
         overlay.add_overlay(&play);
-        if standalone {
-            let column = gtk::Box::new(gtk::Orientation::Vertical, 0);
-            column.append(&top);
+        let header_parts = if standalone {
+            top.remove(&back);
+            top.remove(&titles);
+            titles.set_hexpand(false);
+            titles.set_halign(gtk::Align::Center);
             overlay.set_vexpand(true);
-            column.append(overlay);
-            root.set_child(Some(&column));
+            root.set_child(Some(overlay));
+            Some(HeaderParts { start: back.clone(), center: titles.clone(), end: end.clone() })
         } else {
+            None
+        };
+        if !standalone {
             root.set_child(Some(overlay));
             root.add_overlay(&top);
         }
@@ -195,6 +218,7 @@ impl Lightbox {
             idle_timer: RefCell::new(None),
             slideshow_timer: RefCell::new(None),
             pointer: Cell::new((-1.0, -1.0)),
+            header_parts: RefCell::new(header_parts),
         });
         let lb = Lightbox(inner);
         for (b, a) in [
@@ -227,6 +251,11 @@ impl Lightbox {
         });
         lb.0.root.add_controller(motion);
         lb
+    }
+
+    /// Stand-alone: the controls for the window's header (once).
+    pub fn take_header_parts(&self) -> Option<HeaderParts> {
+        self.0.header_parts.borrow_mut().take()
     }
 
     pub fn widget(&self) -> &gtk::Overlay {

@@ -8,7 +8,7 @@ use gtk::prelude::*;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-pub const WIDTH: i32 = 280;
+pub const WIDTH: i32 = 288;
 
 type Handler = Rc<dyn Fn(Action)>;
 
@@ -27,8 +27,6 @@ pub struct View {
     pub selected: usize,
     /// The albums the photo is in: (id, name).
     pub albums: Vec<(String, String)>,
-    /// The thumbnail, for the preview's histogram.
-    pub cell: Option<crate::grid::CellData>,
 }
 
 #[derive(Clone)]
@@ -45,7 +43,7 @@ impl Inspector {
         root.set_size_request(WIDTH, -1);
         let head = hbox(8);
         head.add_css_class("inspector-head");
-        let title = label("Photo info", "menu-heading");
+        let title = label("Info", "inspector-title");
         title.set_hexpand(true);
         head.append(&title);
         let close = widgets::icon_button("window-close-symbolic", "Close (I)");
@@ -89,12 +87,14 @@ impl Inspector {
         };
 
         let preview = gtk::Picture::for_filename(photo.preview_path());
-        preview.set_content_fit(gtk::ContentFit::Contain);
+        preview.set_content_fit(gtk::ContentFit::Cover);
         preview.set_size_request(-1, 150);
         preview.set_can_shrink(true);
         preview.set_cursor_from_name(Some("pointer"));
+        preview.set_tooltip_text(Some("Open (Enter)"));
         let frame = gtk::Box::new(gtk::Orientation::Vertical, 0);
         frame.add_css_class("inspector-preview-frame");
+        frame.set_overflow(gtk::Overflow::Hidden);
         frame.append(&preview);
         let click = gtk::GestureClick::new();
         let me = self.clone();
@@ -110,6 +110,7 @@ impl Inspector {
         name.set_ellipsize(pango::EllipsizeMode::Middle);
         name.set_tooltip_text(Some(&photo.file_name));
         self.body.append(&name);
+        self.body.append(&label(&taken_line(photo.taken), "inspector-sub"));
         if view.selected > 1 {
             let t = widgets::tag(&format!("{} selected", view.selected));
             t.set_halign(gtk::Align::Start);
@@ -117,56 +118,9 @@ impl Inspector {
             self.body.append(&t);
         }
 
-        if let Some(cell) = &view.cell
-            && !photo.is_video()
-        {
-            self.body.append(&histogram(cell));
-        }
-
-        self.body.append(&label("Details", "group-title"));
-        let dims = if photo.width > 0 { format!("{} × {}", photo.width, photo.height) } else { "Unknown".into() };
-        let mut rows = vec![
-            ("Dimensions", dims),
-            ("Size", photo.file_size_formatted.clone()),
-            ("Format", photo.format.clone()),
-            ("Date", photo.date_display.clone()),
-        ];
-        if let Some(d) = photo.duration {
-            rows.push(("Length", crate::models::format_duration(d)));
-        }
-        self.body.append(&details(&rows));
-
-        // The folder, as a link that opens it.
-        let folder = crate::paths::pretty(std::path::Path::new(photo.folder()));
-        let link = gtk::Button::with_label(&folder);
-        link.add_css_class("flat");
-        link.add_css_class("folder-link");
-        link.set_tooltip_text(Some("Show in the file manager (Ctrl+O)"));
-        if let Some(l) = link.child().and_downcast::<gtk::Label>() {
-            l.set_ellipsize(pango::EllipsizeMode::Start);
-            l.set_xalign(0.0);
-        }
-        let me = self.clone();
-        link.connect_clicked(move |_| me.emit(Action::Reveal));
-        self.body.append(&link);
-
-        if let (Some(lat), Some(lon)) = (photo.latitude, photo.longitude) {
-            self.body.append(&label("Location", "group-title"));
-            let text = format!(
-                "{:.5}° {}, {:.5}° {}",
-                lat.abs(),
-                if lat < 0.0 { "S" } else { "N" },
-                lon.abs(),
-                if lon < 0.0 { "W" } else { "E" }
-            );
-            self.body.append(&details(&[("Position", text)]));
-            let url = format!("https://www.openstreetmap.org/?mlat={lat:.6}&mlon={lon:.6}#map=15/{lat:.6}/{lon:.6}");
-            let map = gtk::LinkButton::with_label(&url, "Open in OpenStreetMap");
-            map.set_halign(gtk::Align::Start);
-            map.add_css_class("map-link");
-            self.body.append(&map);
-        }
-
+        // One card: the camera, the picture, where it was taken, and its folder.
+        let card = vbox(0);
+        card.add_css_class("info-card");
         let device = match (&photo.camera_make, &photo.camera_model) {
             (Some(m), Some(model)) if model.contains(m.as_str()) => Some(model.clone()),
             (Some(m), Some(model)) => Some(format!("{m} {model}")),
@@ -174,105 +128,126 @@ impl Inspector {
             (Some(m), None) => Some(m.clone()),
             _ => None,
         };
-        let camera: Vec<(&str, String)> = [
-            ("Device", device),
-            ("Lens", photo.lens_model.clone()),
-            ("Focal length", photo.focal_length.clone()),
-            ("Aperture", photo.aperture.clone()),
-            ("Shutter", photo.shutter_speed.clone()),
-            ("ISO", photo.iso.clone()),
+        let exposure: Vec<String> = [
+            photo.focal_length.clone(),
+            photo.aperture.clone(),
+            photo.shutter_speed.clone(),
+            photo.iso.as_ref().map(|i| format!("ISO {i}")),
         ]
         .into_iter()
-        .filter_map(|(k, v)| v.map(|v| (k, v)))
+        .flatten()
         .collect();
-        if !camera.is_empty() {
-            self.body.append(&label("Camera", "group-title"));
-            self.body.append(&details(&camera));
+        if device.is_some() || !exposure.is_empty() {
+            let lens = photo.lens_model.clone().into_iter().chain(Some(exposure.join(" · "))).filter(|s| !s.is_empty());
+            card.append(&info_row(
+                "camera-photo-symbolic",
+                device.as_deref().unwrap_or("Camera"),
+                &lens.collect::<Vec<_>>().join("\n"),
+            ));
         }
+        let mut picture = Vec::new();
+        if photo.width > 0 {
+            let mp = photo.width as f64 * photo.height as f64 / 1_000_000.0;
+            picture.push(format!("{mp:.1} MP"));
+        }
+        picture.push(photo.file_size_formatted.clone());
+        picture.push(photo.format.clone());
+        if let Some(d) = photo.duration {
+            picture.push(crate::models::format_duration(d));
+        }
+        let dims = if photo.width > 0 { format!("{} × {}", photo.width, photo.height) } else { "Unknown size".into() };
+        card.append(&info_row("image-x-generic-symbolic", &dims, &picture.join(" · ")));
+        if let (Some(lat), Some(lon)) = (photo.latitude, photo.longitude) {
+            let text = format!(
+                "{:.2}° {}, {:.2}° {}",
+                lat.abs(),
+                if lat < 0.0 { "S" } else { "N" },
+                lon.abs(),
+                if lon < 0.0 { "W" } else { "E" }
+            );
+            let row = info_row("mark-location-symbolic", &text, "Open in OpenStreetMap");
+            let url = format!("https://www.openstreetmap.org/?mlat={lat:.6}&mlon={lon:.6}#map=15/{lat:.6}/{lon:.6}");
+            let link = gtk::LinkButton::new(&url);
+            link.set_child(Some(&row));
+            link.add_css_class("info-row-button");
+            card.append(&link);
+        }
+        let folder_path = std::path::Path::new(photo.folder());
+        let folder = folder_path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| "/".into());
+        let row = info_row("folder-symbolic", &folder, "Show in Files");
+        row.set_tooltip_text(Some(&crate::paths::pretty(folder_path)));
+        let reveal = gtk::Button::new();
+        reveal.set_child(Some(&row));
+        reveal.add_css_class("info-row-button");
+        reveal.set_tooltip_text(Some("Show in the file manager (Ctrl+O)"));
+        let me = self.clone();
+        reveal.connect_clicked(move |_| me.emit(Action::Reveal));
+        card.append(&reveal);
+        self.body.append(&card);
 
+        // The albums it's in, as chips; the cross takes it out of one.
         if !view.albums.is_empty() {
-            self.body.append(&label("In albums", "group-title"));
-            let list = vbox(4);
+            let chips = gtk::FlowBox::new();
+            chips.add_css_class("album-chips");
+            chips.set_selection_mode(gtk::SelectionMode::None);
+            chips.set_max_children_per_line(6);
+            chips.set_column_spacing(6);
+            chips.set_row_spacing(6);
             for (id, name) in &view.albums {
-                let row = hbox(8);
-                row.add_css_class("album-row");
-                row.append(&gtk::Image::from_icon_name("folder-symbolic"));
+                let chip = hbox(4);
+                chip.add_css_class("info-chip");
                 let l = label(name, "");
-                l.set_hexpand(true);
                 l.set_ellipsize(pango::EllipsizeMode::End);
-                row.append(&l);
-                let remove = widgets::icon_button("list-remove-symbolic", "Take it out of this album");
+                l.set_max_width_chars(18);
+                chip.append(&l);
+                let remove = gtk::Button::from_icon_name("window-close-symbolic");
+                remove.add_css_class("chip-remove");
+                remove.set_tooltip_text(Some("Take it out of this album"));
                 let (me, id) = (self.clone(), id.clone());
                 remove.connect_clicked(move |_| me.emit(Action::RemoveFromAlbum(id.clone())));
-                row.append(&remove);
-                list.append(&row);
+                chip.append(&remove);
+                chips.insert(&chip, -1);
             }
-            self.body.append(&list);
+            self.body.append(&chips);
         }
     }
 }
 
-/// How bright the photo is: a curve of how many pixels have each brightness, drawn
-/// from its thumbnail.
-fn histogram(cell: &crate::grid::CellData) -> gtk::DrawingArea {
-    let area = gtk::DrawingArea::new();
-    area.add_css_class("histogram");
-    area.set_content_height(56);
-    area.set_tooltip_text(Some("Brightness, dark to light"));
-    let bins: Rc<RefCell<Option<[f64; 64]>>> = Rc::default();
-    let b = bins.clone();
-    area.set_draw_func(move |area, cr, w, h| {
-        let Some(bins) = *b.borrow() else { return };
-        let peak = bins.iter().cloned().fold(0.0, f64::max).max(1e-9);
-        let fg = area.color();
-        let (w, h) = (w as f64, h as f64);
-        cr.move_to(0.0, h);
-        for (i, v) in bins.iter().enumerate() {
-            cr.line_to(i as f64 / 63.0 * w, h - (v / peak).sqrt() * (h - 2.0));
-        }
-        cr.line_to(w, h);
-        cr.close_path();
-        cr.set_source_rgba(fg.red() as f64, fg.green() as f64, fg.blue() as f64, 0.3);
-        let _ = cr.fill();
-    });
-    let a = area.clone();
-    crate::grid::thumbnail_texture(cell, move |tex| {
-        let mut downloader = gtk::gdk::TextureDownloader::new(&tex);
-        downloader.set_format(gtk::gdk::MemoryFormat::R8g8b8a8);
-        let (bytes, stride) = downloader.download_bytes();
-        let mut counts = [0f64; 64];
-        let (w, h) = (tex.width() as usize, tex.height() as usize);
-        for row in bytes.chunks(stride).take(h) {
-            for px in row[..w * 4].as_chunks::<4>().0 {
-                let y = 0.2126 * px[0] as f64 + 0.7152 * px[1] as f64 + 0.0722 * px[2] as f64;
-                counts[((y / 256.0) * 64.0) as usize] += 1.0;
-            }
-        }
-        *bins.borrow_mut() = Some(counts);
-        a.queue_draw();
-    });
-    area
+/// When it was taken: "Saturday, Oct 18, 2026 · 17:42" (wall-clock seconds).
+fn taken_line(taken: i64) -> String {
+    const WEEKDAYS: [&str; 7] = ["Thursday", "Friday", "Saturday", "Sunday", "Monday", "Tuesday", "Wednesday"];
+    let (y, m, d) = crate::metadata::ymd(taken);
+    let seconds = taken.rem_euclid(86400);
+    format!(
+        "{}, {} {d}, {y} · {:02}:{:02}",
+        WEEKDAYS[taken.div_euclid(86400).rem_euclid(7) as usize],
+        crate::metadata::month_abbr(m),
+        seconds / 3600,
+        seconds % 3600 / 60
+    )
 }
 
-/// Names and values in two aligned columns, in one rounded box.
-fn details(rows: &[(&str, String)]) -> gtk::Grid {
-    let grid = gtk::Grid::new();
-    grid.add_css_class("detail-grid");
-    grid.set_column_spacing(16);
-    grid.set_row_spacing(8);
-    for (n, (k, v)) in rows.iter().enumerate() {
-        let key = label(k, "detail-key");
-        key.set_valign(gtk::Align::Start);
-        key.set_width_chars(10);
-        grid.attach(&key, 0, n as i32, 1, 1);
-        let value = label(v, "detail-value mono");
-        value.set_hexpand(true);
-        value.set_wrap(true);
-        value.set_wrap_mode(pango::WrapMode::WordChar);
-        value.set_max_width_chars(20);
-        value.set_selectable(true);
-        value.set_can_focus(false);
-        grid.attach(&value, 1, n as i32, 1, 1);
+/// A card row: an icon, then a line and the quieter lines under it.
+fn info_row(icon: &str, title: &str, sub: &str) -> gtk::Box {
+    let row = hbox(12);
+    row.add_css_class("info-row");
+    let image = gtk::Image::from_icon_name(icon);
+    image.set_valign(gtk::Align::Start);
+    image.add_css_class("info-icon");
+    row.append(&image);
+    let text = vbox(2);
+    let t = label(title, "info-title");
+    t.set_xalign(0.0);
+    t.set_wrap(true);
+    t.set_wrap_mode(pango::WrapMode::WordChar);
+    text.append(&t);
+    if !sub.is_empty() {
+        let s = label(sub, "info-sub");
+        s.set_xalign(0.0);
+        s.set_wrap(true);
+        s.set_wrap_mode(pango::WrapMode::WordChar);
+        text.append(&s);
     }
-    grid
+    row.append(&text);
+    row
 }

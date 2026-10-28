@@ -1,9 +1,11 @@
 # Photos — notes for working on this repo
 
-- GTK4 (gtk4-rs 0.11) + Rust, no libadwaita. The window is one flat, monospace surface
-  split by hairlines (see `STYLE.md`): the sidebar (its head holds the toggle and
-  search), the gallery (its own toolbar row, the grid, the info drawer) and a status bar
-  (`F1 Shortcuts` · items, settings). Settings is a card over the window
+- GTK4 (gtk4-rs 0.11) + Rust, no libadwaita. Nyx 2.0 (`nyx_theme::use_design_2`): one
+  blended surface. The header (`chrome::app_header`) has the section as subtitle and the
+  sidebar toggle; in the middle a pill with the selection's actions; then album
+  actions, search, Info, the ⋯ menu and Settings. Below: the sidebar (a flat list, then
+  Albums with covers), the grid with the date scrubber as a labelled column and the info
+  panel docked beside it, and a quiet foot (counts, the grouping menu, thumbnail size). Settings is a card over the window
   (`settings_dialog.rs`), rebuilt from `settings_view::build` each time it opens, listing
   its groups (named by `widgets::group`).
   Every colour in `src/style.css` is a `@theme_*` token; `src/theme.rs` loads the
@@ -12,7 +14,7 @@
   actions; the toolbar's quick actions and its album and ⋯ menus, built when opened). `state.rs` is plain data (section, search, timeline groups, selection) with
   the unit tests. `grid.rs` is the thumbnail grid: a virtualised `ListView` whose rows are
   headings or rows of thumbnails. `lightbox.rs` is the viewer, `inspector.rs` the info
-  drawer (information only, no actions), `settings_view.rs` the settings page (shown in `settings_dialog.rs`), `library.rs` scanning, favourites and
+  panel (information only, no actions), `settings_view.rs` the settings page (shown in `settings_dialog.rs`), `library.rs` scanning, favourites and
   albums (atomic writes).
 - Two binaries share one library (`lib.rs`): `nyx-photos` (`main.rs`) and `nyx-viewer`, Photo
   Viewer (`src/bin/nyx-viewer.rs`, one folder of photos, hands off to the gallery with `nyx-photos [--edit] FILE`).

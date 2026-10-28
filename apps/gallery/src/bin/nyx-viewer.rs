@@ -120,8 +120,9 @@ struct Viewer {
     pages: gtk::Stack,
     /// Holds the pages and the toasts.
     overlay: gtk::Overlay,
-    /// The photo's folder, in the status bar.
-    folder: gtk::Label,
+    /// The 2.0 header: the folder as subtitle; the photo's name and actions while one
+    /// is open.
+    header: nyx_ui::chrome::AppHeader,
     files: RefCell<Vec<PathBuf>>,
     index: Cell<usize>,
     /// Details read so far, by path.
@@ -144,28 +145,19 @@ fn build(app: &gtk::Application, file: Option<PathBuf>) {
     pages.add_named(lightbox.widget(), Some("photo"));
     pages.set_vexpand(true);
 
-    // The bar along the bottom: the shortcuts on the left, the photo's folder on the right.
-    let status = nyx_photos::widgets::hbox(16);
-    status.add_css_class("status-bar");
-    let help = gtk::Button::new();
-    help.add_css_class("status-help");
-    let help_content = nyx_photos::widgets::hbox(10);
-    help_content.append(&nyx_photos::widgets::label("F1", "status-key"));
-    help_content.append(&nyx_photos::widgets::label("Shortcuts", ""));
-    help.set_child(Some(&help_content));
-    help.set_tooltip_text(Some("Show the keyboard shortcuts"));
-    help.connect_clicked(|_| dialog::show_shortcuts(SHORTCUTS));
-    status.append(&help);
-    let folder = nyx_photos::widgets::label("", "status-readout");
-    folder.set_hexpand(true);
-    folder.set_xalign(1.0);
-    folder.set_ellipsize(gtk::pango::EllipsizeMode::Start);
-    status.append(&folder);
+    // The header: the app and the photo's folder, the way back to the gallery; the
+    // photo's name and place in the middle; its actions on the right. No status bar.
+    let header = nyx_ui::chrome::app_header(&window, "image-x-generic-symbolic", NAME);
+    if let Some(parts) = lightbox.take_header_parts() {
+        header.start.append(&parts.start);
+        header.center.append(&parts.center);
+        header.end.append(&parts.end);
+    }
 
     let frame = nyx_photos::widgets::vbox(0);
     frame.add_css_class("window-frame");
+    frame.append(&header.root);
     frame.append(&pages);
-    frame.append(&status);
     let overlay = gtk::Overlay::new();
     overlay.set_child(Some(&frame));
     window.set_child(Some(&overlay));
@@ -178,7 +170,7 @@ fn build(app: &gtk::Application, file: Option<PathBuf>) {
         home,
         pages,
         overlay,
-        folder,
+        header,
         files: RefCell::default(),
         index: Cell::new(0),
         items: RefCell::default(),
@@ -212,8 +204,6 @@ fn build(app: &gtk::Application, file: Option<PathBuf>) {
     let me = v.clone();
     v.home.open.connect_clicked(move |_| me.choose());
     v.home.gallery.connect_clicked(|_| cmd::spawn(&[GALLERY]));
-    let w = window.clone();
-    v.home.close.connect_clicked(move |_| w.close());
     let me = v.clone();
     v.home.clear.connect_clicked(move |_| {
         recent::clear();
@@ -256,7 +246,6 @@ struct Home {
     zone: gtk::Box,
     open: gtk::Button,
     gallery: gtk::Button,
-    close: gtk::Button,
     clear: gtk::Button,
     recents_group: gtk::Box,
     recents: gtk::Box,
@@ -265,19 +254,6 @@ struct Home {
 fn home_page() -> Home {
     let root = widgets::vbox(0);
     root.add_css_class("viewer-home");
-    // The same top bar the photo has, with nothing open yet.
-    let top = widgets::hbox(4);
-    top.add_css_class("top-bar");
-    let crumbs = widgets::hbox(10);
-    crumbs.add_css_class("crumbs");
-    crumbs.set_hexpand(true);
-    crumbs.append(&widgets::label("Photo Viewer", "crumb-root"));
-    crumbs.append(&widgets::label("/", "crumb-sep"));
-    crumbs.append(&widgets::label("Home", "crumb"));
-    top.append(&crumbs);
-    let close = widgets::bar_button("window-close-symbolic", "Close (Esc)");
-    top.append(&close);
-    root.append(&top);
 
     let body = widgets::vbox(0);
     body.add_css_class("settings-page");
@@ -337,7 +313,7 @@ fn home_page() -> Home {
         .vexpand(true)
         .build();
     root.append(&scroll);
-    Home { root, zone, open, gallery, close, clear, recents_group, recents }
+    Home { root, zone, open, gallery, clear, recents_group, recents }
 }
 
 /// A recent photo: its thumbnail, name, folder and facts, and a button to forget it.
@@ -348,11 +324,10 @@ fn recent_row(path: &Path, open: impl Fn(&Path) + 'static) -> gtk::Box {
     button.add_css_class("flat");
     button.set_hexpand(true);
     let c = widgets::hbox(12);
-    let thumb = gtk::Picture::new();
+    // An image, not a picture: a picture asks for its photo's full size.
+    let thumb = gtk::Image::new();
     thumb.add_css_class("recent-thumb");
-    thumb.set_content_fit(gtk::ContentFit::Cover);
-    thumb.set_can_shrink(true);
-    thumb.set_size_request(40, 40);
+    thumb.set_pixel_size(40);
     thumb.set_valign(gtk::Align::Center);
     thumb.set_overflow(gtk::Overflow::Hidden);
     let t = thumb.clone();
@@ -364,7 +339,7 @@ fn recent_row(path: &Path, open: impl Fn(&Path) + 'static) -> gtk::Box {
     let name = widgets::label(&path.file_name().unwrap_or_default().to_string_lossy(), "settings-option-title");
     name.set_xalign(0.0);
     name.set_ellipsize(gtk::pango::EllipsizeMode::Middle);
-    let dir = widgets::label(&path.parent().map(nyx_photos::paths::pretty).unwrap_or_default(), "mono");
+    let dir = widgets::label(&path.parent().map(nyx_photos::paths::pretty).unwrap_or_default(), "dim");
     dir.add_css_class("settings-option-description");
     dir.set_xalign(0.0);
     dir.set_ellipsize(gtk::pango::EllipsizeMode::Start);
@@ -381,7 +356,7 @@ fn recent_row(path: &Path, open: impl Fn(&Path) + 'static) -> gtk::Box {
             .and_then(|d| d.format("%-d %b %Y").ok())
             .map(|s| s.to_string())
             .unwrap_or_default();
-        let facts = widgets::label(&format!("{kind} · {} · {when}", glib::format_size(meta.len())), "mono");
+        let facts = widgets::label(&format!("{kind} · {} · {when}", glib::format_size(meta.len())), "recent-meta");
         facts.add_css_class("dim");
         facts.add_css_class("recent-facts");
         facts.set_ellipsize(gtk::pango::EllipsizeMode::End);
@@ -482,7 +457,9 @@ impl Viewer {
             self.refresh_recents();
             self.pages.set_visible_child_name("empty");
             self.window.set_title(Some(NAME));
-            self.folder.set_text("");
+            self.header.set_subtitle("");
+            self.header.center.set_visible(false);
+            self.header.end.set_visible(false);
             return;
         }
         let at = self.index.get().min(files.len() - 1);
@@ -497,7 +474,13 @@ impl Viewer {
         // After `show`: a stack won't switch to a page that is still hidden.
         self.pages.set_visible_child_name("photo");
         self.window.set_title(Some(&format!("{} — {NAME}", photo.file_name)));
-        self.folder.set_text(&files[at].parent().map(nyx_photos::paths::pretty).unwrap_or_default());
+        let folder = files[at].parent();
+        self.header.set_subtitle(
+            &folder.and_then(|f| f.file_name()).map(|n| n.to_string_lossy().into_owned()).unwrap_or_default(),
+        );
+        self.header.subtitle.set_tooltip_text(folder.map(nyx_photos::paths::pretty).as_deref());
+        self.header.center.set_visible(true);
+        self.header.end.set_visible(true);
         let n = files.len();
         if n > 1 {
             for i in [(at + 1) % n, (at + n - 1) % n] {

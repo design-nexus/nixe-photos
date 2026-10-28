@@ -144,11 +144,7 @@ fn window_group() -> widgets::Group {
     group.add(&theme_row);
     group.add(&widgets::row("Current colors", "", Some(swatches.upcast_ref())));
 
-    let (glow, _) = widgets::switch_row("Glow", "A soft light around selected and focused items.", p.glow, |on| {
-        prefs::update(|p| p.glow = on);
-        theme::apply();
-    });
-    group.add(&glow);
+    group.add(&nyx_ui::widgets::accent_row("photos"));
     let (motion, _) = widgets::switch_row("Reduce motion", "Skip fades and slides.", p.reduce_motion, |on| {
         prefs::update(|p| p.reduce_motion = on);
         theme::apply();
@@ -251,9 +247,9 @@ fn viewing_group(on_layout: Rc<dyn Fn()>) -> widgets::Group {
     let group = widgets::group("Gallery and viewer", "");
     let p = prefs::get();
     let (layout, _) = widgets::choice_row(
-        "Thumbnails",
-        "Squares line up neatly; keeping the shape shows each photo whole.",
-        vec![("square".into(), "Squares".into()), ("justified".into(), "Keep each photo's shape".into())],
+        "Thumbnail layout",
+        "Justified keeps each photo's shape in rows of equal height; squares line up in a grid. Also under the grid button at the bottom right.",
+        vec![("justified".into(), "Justified".into()), ("square".into(), "Squares".into())],
         &p.layout,
         move |l| {
             prefs::update(|p| p.layout = l);

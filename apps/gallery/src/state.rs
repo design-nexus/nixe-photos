@@ -8,9 +8,9 @@ use crate::models::{PhotoItem, format_bytes};
 use std::collections::{HashMap, HashSet};
 
 pub const LIBRARY_SECTIONS: &[(&str, &str, &str)] = &[
-    ("all_photos", "All photos", "image-x-generic-symbolic"),
+    ("all_photos", "Library", "image-x-generic-symbolic"),
     ("favorites", "Favorites", "starred-symbolic"),
-    ("recent", "Recently added", "document-open-recent-symbolic"),
+    ("recent", "Recent", "document-open-recent-symbolic"),
     ("folders", "Folders", "folder-open-symbolic"),
     ("duplicates", "Possible duplicates", "edit-copy-symbolic"),
 ];
@@ -96,7 +96,7 @@ impl State {
             .chain(MEDIA_SECTIONS)
             .find(|(id, _, _)| *id == self.section)
             .map(|(_, t, _)| t.to_string())
-            .unwrap_or_else(|| "All photos".into())
+            .unwrap_or_else(|| "Library".into())
     }
 
     fn now(&self) -> i64 {
@@ -150,7 +150,18 @@ impl State {
             "folders" => {
                 let photos = &self.lib.photos;
                 shown.sort_by(|&a, &b| photos[a].folder().cmp(photos[b].folder()));
-                self.group(&mut shown, |p| (crate::paths::pretty(std::path::Path::new(p.folder())), folder_name(p)))
+                let mut spans =
+                    self.group(&mut shown, |p| (crate::paths::pretty(std::path::Path::new(p.folder())), folder_name(p)));
+                // Grouped by the whole path; headed by the folder's name, with where it is
+                // beside the count.
+                for span in &mut spans {
+                    let path = std::path::Path::new(&span.title);
+                    if let (Some(name), Some(parent)) = (path.file_name(), path.parent()) {
+                        span.sub = format!("{} · {}", parent.display(), span.sub);
+                        span.title = name.to_string_lossy().into_owned();
+                    }
+                }
+                spans
             }
             "recent" => {
                 let photos = &self.lib.photos;
@@ -184,7 +195,11 @@ impl State {
             }
             "years" => self.group(shown, |p| (p.year.to_string(), p.year.to_string())),
             "months" => self.group(shown, |p| (format!("{} {}", month_name(p.month), p.year), short(p))),
-            _ => self.group(shown, |p| (p.date_display.clone(), short(p))),
+            _ => {
+                let today = self.now().div_euclid(DAY);
+                let this_year = ymd(self.now()).0;
+                self.group(shown, |p| (day_title(p, today, this_year), short(p)))
+            }
         }
     }
 
@@ -440,6 +455,26 @@ fn date_range(w: &str) -> Option<(i64, i64)> {
             (mm == num(m, 12)?).then_some((start, start + DAY))
         }
         _ => None,
+    }
+}
+
+/// A day's heading: "Today", "Yesterday", "Saturday, Oct 18", or with its year
+/// when it isn't this year.
+fn day_title(p: &PhotoItem, today: i64, this_year: i32) -> String {
+    const WEEKDAYS: [&str; 7] = ["Thursday", "Friday", "Saturday", "Sunday", "Monday", "Tuesday", "Wednesday"];
+    let day = p.taken.div_euclid(DAY);
+    match today - day {
+        0 => "Today".into(),
+        1 => "Yesterday".into(),
+        _ => {
+            // Day 0, 1 January 1970, was a Thursday.
+            let weekday = WEEKDAYS[day.rem_euclid(7) as usize];
+            if p.year == this_year {
+                format!("{weekday}, {} {}", month_abbr(p.month), p.day)
+            } else {
+                format!("{weekday}, {} {}, {}", month_abbr(p.month), p.day, p.year)
+            }
+        }
     }
 }
 

@@ -95,18 +95,11 @@ image.chevron {
 /* One card per group; its rows are split by hairlines. */
 
 .settings-card {
-  border: 1px solid @hairline;
-  border-radius: 10px;
+  border: none;
 }
 
 .settings-card .card-row {
-  border-top: 1px solid @divider;
-}
-
-.settings-card > .card-row:first-child,
-.settings-card > :first-child > .card-row:first-child,
-.settings-card .card-row.first-shown {
-  border-top-color: transparent;
+  border: none;
 }
 
 /* Plain text placed straight in a card (status lines, "nothing found"). */
@@ -1017,3 +1010,114 @@ window.photos-window button.dialog-nav.active {
 window.photos-window button.dialog-nav.active image {
   color: @theme_accent;
 }
+
+/* ---------- Nyx 2.0: matched to the Photos mockup ---------- */
+
+/* Header: equal 32 px buttons; Info is accent-tinted while open. */
+window.photos-window .app-header button.bar-button,
+window.photos-window .app-header menubutton.bar-button > button {
+  min-width: 32px; min-height: 32px; padding: 0; border-radius: 7px;
+  background: transparent; box-shadow: none; color: @theme_dim_text;
+}
+window.photos-window .app-header button.bar-button:hover,
+window.photos-window .app-header menubutton.bar-button > button:hover { background: alpha(@theme_text, 0.06); color: @theme_text; }
+window.photos-window .app-header button.bar-button.on { background: alpha(@theme_accent, 0.16); color: @theme_accent; }
+
+/* The selection's actions: a quiet pill; with several photos selected it's tinted and
+   says how many. */
+.selection-pill { padding: 2px 4px; border-radius: 9px; min-height: 32px; }
+.selection-pill.many { background: alpha(@theme_accent, 0.10); box-shadow: inset 0 0 0 1px alpha(@theme_accent, 0.28); }
+.selection-pill .selection-chip { padding: 0 8px 0 10px; background: none; color: @theme_text; font-weight: 600; font-size: 12.5px; }
+.selection-pill .quick-actions { border: none; padding: 0; margin: 0; }
+window.photos-window .selection-pill button.pill-button,
+window.photos-window .selection-pill menubutton.pill-button > button,
+window.photos-window .selection-pill button.bar-button {
+  min-width: 30px; min-height: 28px; padding: 0; border-radius: 6px; border: none;
+  background: transparent; box-shadow: none; color: @theme_dim_text;
+}
+window.photos-window .selection-pill button.pill-button:hover,
+window.photos-window .selection-pill menubutton.pill-button > button:hover,
+window.photos-window .selection-pill button.bar-button:hover { background: alpha(@theme_text, 0.07); color: @theme_text; }
+window.photos-window .selection-pill button.pill-button.on { color: @theme_accent; }
+window.photos-window .selection-pill button.pill-button.danger:hover { color: @theme_danger; background: alpha(@theme_danger, 0.12); }
+window.photos-window .selection-pill image { -gtk-icon-size: 15px; }
+
+/* Sidebar: 30 px rows; albums show their cover. */
+window.photos-window .settings-navigation { padding: 8px; }
+window.photos-window .settings-navigation button.nav-item { min-height: 30px; font-size: 13px; }
+window.photos-window .settings-navigation button.nav-item image { -gtk-icon-size: 15px; }
+window.photos-window .settings-navigation .nav-count { font-family: inherit; font-size: 11.5px; color: @theme_text_tertiary; font-feature-settings: "tnum"; }
+window.photos-window .settings-navigation .nav-group-row { margin: 14px 0 4px 0; padding: 0 4px 0 10px; border-top: none; }
+window.photos-window .settings-navigation .nav-group-row .nav-group { margin: 0; padding: 0; font-size: 11px; }
+window.photos-window .settings-navigation button.nav-add { min-width: 22px; min-height: 22px; padding: 0; border-radius: 6px; background: transparent; border: none; box-shadow: none; color: @theme_text_tertiary; }
+window.photos-window .settings-navigation button.nav-add:hover { background: alpha(@theme_text, 0.06); color: @theme_text; }
+window.photos-window .album-cover { border-radius: 4px; min-width: 18px; min-height: 18px; }
+
+/* The timeline. */
+.gallery-header { margin: 18px 0 10px; }
+.gallery-header .group-title { font-size: 14.5px; font-weight: 600; }
+.gallery-sub { font-size: 12.5px; color: @theme_dim_text; }
+.photo-cell { border-radius: 4px; outline-width: 2px; }
+.photo-cell:hover { outline-color: transparent; }
+.photo-cell.cursor { outline-color: alpha(@theme_accent, 0.5); }
+.photo-cell.selected { outline-color: @theme_accent; box-shadow: none; }
+.cell-check { min-width: 12px; min-height: 12px; margin: 6px; padding: 3px; -gtk-icon-size: 12px; }
+.cell-badge { font-size: 11px; border-radius: 5px; padding: 1px 6px; }
+
+/* The foot: quiet text, the grouping menu and the size slider; no bar. */
+.photos-foot { min-height: 30px; padding: 0 14px 0 16px; }
+.photos-foot .foot-text { color: @theme_dim_text; font-size: 11.5px; font-feature-settings: "tnum"; }
+window.photos-window .photos-foot menubutton.foot-button > button,
+window.photos-window .photos-foot menubutton > button {
+  min-width: 24px; min-height: 24px; padding: 0; border-radius: 6px; border: none;
+  background: transparent; box-shadow: none; color: @theme_dim_text;
+}
+window.photos-window .photos-foot menubutton > button:hover { background: alpha(@theme_text, 0.06); color: @theme_text; }
+window.photos-window .photos-foot image { -gtk-icon-size: 14px; }
+.photos-foot .zoom-control scale { min-width: 80px; }
+
+/* Info: docked on the same surface; a preview, the file, one card, album chips. */
+window.photos-window .inspector { background: @theme_bg; border-left: none; }
+window.photos-window .inspector-head { padding: 12px 12px 8px 18px; }
+window.photos-window .inspector-title { font-weight: 600; font-size: 13px; }
+window.photos-window .inspector-body { padding: 4px 18px 24px 18px; }
+window.photos-window .inspector-preview-frame { border-radius: 10px; padding: 0; border: none; background: @theme_card; }
+window.photos-window .inspector-name { margin: 14px 0 0; font-weight: 600; font-size: 14px; }
+window.photos-window .inspector-sub { margin: 2px 0 0; font-size: 12.5px; color: @theme_dim_text; }
+.info-card { margin-top: 16px; padding: 6px 16px; border-radius: 11px; background: @theme_card; }
+.info-row { padding: 10px 0; }
+.info-icon { color: @theme_dim_text; -gtk-icon-size: 15px; margin-top: 1px; }
+.info-title { font-size: 13px; color: @theme_text; }
+.info-sub { font-size: 12px; color: @theme_dim_text; }
+window.photos-window .info-card button.info-row-button { padding: 0; margin: 0; border: none; border-radius: 0; background: none; box-shadow: none; min-height: 0; }
+window.photos-window .info-card button.info-row-button:hover .info-title { color: @theme_accent; }
+.album-chips { margin-top: 14px; }
+.info-chip { padding: 0 2px 0 10px; min-height: 26px; border-radius: 6px; background: alpha(@theme_text, 0.05); font-size: 12px; color: @theme_dim_text; }
+window.photos-window .info-chip button.chip-remove { min-width: 20px; min-height: 20px; padding: 0; border: none; background: none; box-shadow: none; color: @theme_text_tertiary; }
+window.photos-window .info-chip button.chip-remove image { -gtk-icon-size: 10px; }
+window.photos-window .info-chip button.chip-remove:hover { color: @theme_text; }
+
+/* The grid button's menu: grouping, then layout. */
+.grid-menu { padding: 8px; }
+.grid-menu .menu-heading { margin: 2px 2px 0; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; color: @theme_text_tertiary; }
+
+/* ---------- Photo Viewer on 2.0 ---------- */
+
+/* The header's middle: the photo's name, then where it is in its folder. */
+.viewer-title { margin: 0 12px; }
+.viewer-name { font-weight: 500; font-size: 13px; color: @theme_text; }
+.viewer-position { font-size: 12.5px; color: @theme_text_tertiary; font-family: inherit; font-feature-settings: "tnum"; }
+window.photos-window .app-header .dim.mono { font-family: inherit; font-size: 12px; color: @theme_text_tertiary; }
+/* The picture sits on the window's surface; no darker well. */
+window.photos-window .lightbox { background: @theme_bg; }
+
+/* Home: a quiet drop zone and the recent photos as rows on cards. */
+.viewer-home .dropzone { border: 1.5px dashed alpha(@theme_text, 0.12); border-radius: 14px; background: none; padding: 36px 24px; }
+.viewer-home .dropzone.drop-hover { border-color: alpha(@theme_accent, 0.6); background: alpha(@theme_accent, 0.06); }
+.viewer-home .dropzone-title { font-size: 16px; font-weight: 600; }
+.viewer-home .group-title { margin: 24px 2px 8px; font-size: 11px; letter-spacing: 0.06em; color: @theme_text_tertiary; }
+.recent-row { border-radius: 11px; background: @theme_card; padding: 2px 6px 2px 2px; }
+.recent-row:hover { background: alpha(@theme_text, 0.06); }
+.recent-thumb { border-radius: 6px; }
+.recent-row .dim { font-size: 12px; color: @theme_dim_text; }
+.recent-meta { font-size: 12px; color: @theme_text_tertiary; font-feature-settings: "tnum"; }

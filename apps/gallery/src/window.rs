@@ -1,6 +1,7 @@
-//! The main window: a top bar (sidebar toggle, where you are, search, settings,
-//! close), the sidebar, the gallery page with the photo info drawer, a status
-//! bar, the viewer and toasts. Settings opens as a card over the window (see
+//! The main window: the header (the app and where you are, the sidebar toggle,
+//! what to do with the selection, search, info, the menu and settings), the
+//! sidebar, the gallery with the info panel docked beside it, a quiet foot (counts,
+//! grouping, thumbnail size), the viewer and toasts. Settings opens as a card over the window (see
 //! `settings_dialog`).
 
 use crate::editor::{Editor, Outcome};
@@ -44,6 +45,9 @@ pub struct App {
     gallery_page: gtk::Box,
     page: RefCell<String>,
     // Header
+    header: chrome::AppHeader,
+    /// "3 selected" and its actions, in the header's middle.
+    selection_pill: gtk::Box,
     header_actions: gtk::Box,
     info_button: gtk::Button,
     /// The thumbnail-size slider: inline when there is room, in a popover when narrow.
@@ -145,6 +149,13 @@ pub fn present(application: &gtk::Application, section: Option<&str>, open: Opti
         return;
     }
     theme::install();
+    // Settings saved before 2.0 move to its defaults once: thumbnails keep their shape.
+    if !prefs::get().design_2 {
+        prefs::update(|p| {
+            p.layout = "justified".into();
+            p.design_2 = true;
+        });
+    }
     let roots = library::configured_roots(&prefs::get().folders);
     // A file outside the library: show its folder instead.
     let extra = open.as_ref().filter(|f| !roots.iter().any(|r| f.starts_with(r))).and_then(|f| f.parent().map(PathBuf::from));
@@ -210,10 +221,9 @@ impl App {
         let nav = vbox(0);
         nav.add_css_class("settings-navigation");
         nav.set_hexpand(false);
-        let head = chrome::sidebar_head("Photos", Some("Search photos (Ctrl+F)"));
-        let collapse_button = head.toggle.clone();
-        collapse_button.set_tooltip_text(Some("Collapse the sidebar (Ctrl+B)"));
-        let find = head.search.clone().expect("the head has a search button");
+        // The sidebar's toggle and search live in the header.
+        let collapse_button = nyx_ui::widgets::bar_button("sidebar-show-symbolic", "Collapse the sidebar (Ctrl+B)");
+        let find = nyx_ui::widgets::bar_button("system-search-symbolic", "Search photos (Ctrl+F)");
         let search = gtk::SearchEntry::new();
         search.set_placeholder_text(Some("Search photos"));
         search.set_visible(false);
@@ -227,48 +237,36 @@ impl App {
             .vexpand(true)
             .child(&list)
             .build();
-        nav.append(&head.root);
         nav.append(&nav_scroll);
 
         // ----- Gallery page -----
         let gallery_page = vbox(0);
         gallery_page.set_hexpand(true);
-        // One slim bar on top: how to group, how big, and a few actions. No title: the
-        // sidebar already says where you are.
-        let bar = hbox(8);
-        bar.add_css_class("gallery-bar");
-        let header_actions = hbox(8);
-        let deselect = gtk::Button::with_label("Deselect");
-        gallery_page.append(&bar);
-        // The info drawer sits below the bar, beside the grid, so the bar stays usable.
-        let body_overlay = gtk::Overlay::new();
-        body_overlay.set_child(Some(gallery.widget()));
-        body_overlay.set_vexpand(true);
-        body_overlay.add_overlay(&inspector.root);
-        gallery_page.append(&body_overlay);
+        let header_actions = hbox(2);
+        let deselect = nyx_ui::widgets::bar_button("window-close-symbolic", "Deselect (Esc)");
+        // The info panel is docked beside the grid, on the same surface.
+        let gallery_row = hbox(0);
+        gallery_row.set_vexpand(true);
+        gallery.widget().set_hexpand(true);
+        gallery_row.append(gallery.widget());
+        inspector.root.set_hexpand(false);
+        gallery_row.append(&inspector.root);
+        gallery_page.append(&gallery_row);
 
-        // The bar along the bottom: the shortcuts on the left, what's shown on the right.
-        let status = hbox(16);
-        status.add_css_class("status-bar");
-        let help = gtk::Button::new();
-        help.add_css_class("status-help");
-        let help_content = hbox(10);
-        help_content.append(&label("F1", "status-key"));
-        help_content.append(&label("Shortcuts", ""));
-        help.set_child(Some(&help_content));
-        help.set_tooltip_text(Some("Show the keyboard shortcuts"));
-        help.connect_clicked(|_| dialog::show_shortcuts(settings_view::SHORTCUTS));
-        status.append(&help);
+        // The foot, quiet text without a bar: what's shown on the left; how it's grouped
+        // and how big the thumbnails are on the right (filled in by `build_toolbar`).
+        let status = hbox(14);
+        status.add_css_class("photos-foot");
+        let status_items = label("", "foot-text");
+        status_items.set_ellipsize(gtk::pango::EllipsizeMode::End);
+        status_items.set_xalign(0.0);
+        let status_selection = label("", "foot-text");
+        status.append(&status_items);
+        status.append(&status_selection);
         let spacer = hbox(0);
         spacer.set_hexpand(true);
         status.append(&spacer);
-        let status_selection = label("", "accent-text");
-        let status_items = label("", "status-readout");
-        status_items.set_ellipsize(gtk::pango::EllipsizeMode::Start);
-        status.append(&status_selection);
-        status.append(&status_items);
-        let gear = chrome::gear(|| {});
-        status.append(&gear);
+        gallery_page.append(&status);
 
         // ----- Pages and the info drawer -----
         let pages = gtk::Stack::new();
@@ -299,10 +297,27 @@ impl App {
         body.append(&nav);
         body.append(&content);
 
+        // The header: the app and the section, the sidebar toggle; the selection in the
+        // middle; then album actions, search, info, the menu and Settings.
+        let header = chrome::app_header(&window, "image-x-generic-symbolic", "Photos");
+        header.start.append(&collapse_button);
+        let selection_pill = hbox(2);
+        selection_pill.add_css_class("selection-pill");
+        header.center.append(&selection_pill);
+        header.end.set_spacing(4);
+        header.end.append(&header_actions);
+        header.end.append(&find);
+        let info_button = nyx_ui::widgets::bar_button("dialog-information-symbolic", "Photo info (I)");
+        header.end.append(&info_button);
+        let more_menu = gtk::MenuButton::new();
+        more_menu.add_css_class("bar-button");
+        header.end.append(&more_menu);
+        let gear = chrome::settings_button(|| {});
+        header.end.append(&gear);
         let frame = vbox(0);
         frame.add_css_class("window-frame");
+        frame.append(&header.root);
         frame.append(&body);
-        frame.append(&status);
         let overlay = gtk::Overlay::new();
         overlay.set_child(Some(&frame));
         overlay.add_overlay(lightbox.widget());
@@ -320,8 +335,10 @@ impl App {
             pages,
             gallery_page,
             page: RefCell::new(String::new()),
+            header,
+            selection_pill,
             header_actions,
-            info_button: widgets::icon_button("dialog-information-symbolic", "Photo info (I)"),
+            info_button,
             zoom_inline: hbox(6),
             zoom_menu: gtk::MenuButton::new(),
             zoom_scale: gtk::Scale::with_range(gtk::Orientation::Horizontal, 0.0, 1.0, 0.02),
@@ -333,7 +350,7 @@ impl App {
             rotate_button: widgets::icon_button("object-rotate-right-symbolic", "Rotate the view 90° (R)"),
             trash_button: widgets::icon_button("user-trash-symbolic", "Move to trash (Delete)"),
             album_menu: gtk::MenuButton::new(),
-            more_menu: gtk::MenuButton::new(),
+            more_menu,
             status_items,
             status_selection,
             nav,
@@ -357,7 +374,7 @@ impl App {
             edit_when_opened: Cell::new(false),
             open_after_scan: RefCell::new(None),
         });
-        app.build_toolbar(&bar);
+        app.build_toolbar(&status);
         app.build_nav(&list);
         app.wire(&nav_scroll);
         let a = app.clone();
@@ -375,38 +392,57 @@ impl App {
 
     // ----- Building -----
 
-    fn build_toolbar(self: &Rc<Self>, bar: &gtk::Box) {
+    /// The selection's actions in the header's pill, and the foot's grouping menu and
+    /// size slider (`foot`).
+    fn build_toolbar(self: &Rc<Self>, foot: &gtk::Box) {
         let p = prefs::get();
+        // The grid button in the foot: how the timeline is grouped, and whether photos
+        // keep their shape. Built each time it opens, so it shows what Settings changed.
+        let group_menu = gtk::MenuButton::new();
+        group_menu.set_icon_name("view-grid-symbolic");
+        group_menu.set_tooltip_text(Some("Grouping and layout"));
+        group_menu.add_css_class("foot-button");
+        group_menu.set_valign(gtk::Align::Center);
         let a = self.clone();
-        let mode = widgets::segmented(
-            &[("years", "Years"), ("months", "Months"), ("days", "Days"), ("all", "All")],
-            &p.view_mode,
-            move |m| {
-                prefs::update(|p| p.view_mode = m.clone());
-                a.state.borrow_mut().view_mode = m;
-                a.refresh(true);
-            },
-        );
-        bar.append(&mode);
-        // Rename and delete, only while an album is open.
-        bar.append(&self.header_actions);
+        group_menu.set_create_popup_func(move |button| {
+            let p = prefs::get();
+            let b = a.clone();
+            let mode = widgets::segmented(
+                &[("years", "Years"), ("months", "Months"), ("days", "Days"), ("all", "All")],
+                &p.view_mode,
+                move |m| {
+                    prefs::update(|p| p.view_mode = m.clone());
+                    b.state.borrow_mut().view_mode = m;
+                    b.refresh(true);
+                },
+            );
+            let b = a.clone();
+            let layout = widgets::segmented(&[("justified", "Justified"), ("square", "Squares")], &p.layout, move |l| {
+                prefs::update(|p| p.layout = l.clone());
+                b.gallery.set_justified(l == "justified");
+            });
+            let grid_menu = vbox(8);
+            grid_menu.add_css_class("grid-menu");
+            grid_menu.append(&label("GROUP BY", "menu-heading"));
+            grid_menu.append(&mode);
+            grid_menu.append(&label("LAYOUT", "menu-heading"));
+            grid_menu.append(&layout);
+            let pop = gtk::Popover::new();
+            pop.set_child(Some(&grid_menu));
+            button.set_popover(Some(&pop));
+        });
 
-        let spacer = gtk::Box::new(gtk::Orientation::Horizontal, 0);
-        spacer.set_hexpand(true);
-        bar.append(&spacer);
-
-        // What to do with the selection: a chip saying how many, then the actions.
+        // What to do with the selection: how many, then the actions, in the header.
+        let pill = &self.selection_pill;
         self.selection_chip.set_visible(false);
         self.selection_chip.set_valign(gtk::Align::Center);
-        bar.append(&self.selection_chip);
+        pill.append(&self.selection_chip);
         self.deselect.set_visible(false);
-        self.deselect.add_css_class("flat");
         let a = self.clone();
         self.deselect.connect_clicked(move |_| {
             a.state.borrow_mut().clear_selection();
             a.refresh_selection(false);
         });
-        bar.append(&self.deselect);
 
         let q = &self.quick_actions;
         q.add_css_class("quick-actions");
@@ -419,29 +455,27 @@ impl App {
         ] {
             let a = self.clone();
             b.connect_clicked(move |_| run(&a));
+            b.add_css_class("pill-button");
             q.append(b);
         }
         self.trash_button.add_css_class("danger");
         let album = &self.album_menu;
-        album.set_child(Some(&widgets::button_content("folder-symbolic", "Album")));
-        album.set_always_show_arrow(true);
+        album.set_icon_name("folder-new-symbolic");
         album.set_tooltip_text(Some("Add to an album"));
-        album.add_css_class("flat");
+        album.add_css_class("pill-button");
         album.set_valign(gtk::Align::Center);
         let a = self.clone();
         album.set_create_popup_func(move |mb| a.fill_album_menu(mb));
-        q.append(album);
-        bar.append(q);
+        q.insert_child_after(album, Some(&self.fav_button));
+        pill.append(q);
+        pill.append(&self.deselect);
 
         let more = &self.more_menu;
         more.set_icon_name("view-more-symbolic");
-        more.set_tooltip_text(Some("More"));
-        more.add_css_class("flat");
-        more.add_css_class("icon-button");
+        more.set_tooltip_text(Some("More (F10)"));
         more.set_valign(gtk::Align::Center);
         let a = self.clone();
         more.set_create_popup_func(move |mb| a.fill_more_menu(mb));
-        bar.append(more);
 
         let apply_zoom = |v: f64| {
             prefs::update(|p| p.zoom = v);
@@ -475,14 +509,9 @@ impl App {
         }
         let zoom = &self.zoom_inline;
         zoom.add_css_class("zoom-control");
-        let small = gtk::Image::from_icon_name("zoom-out-symbolic");
-        small.add_css_class("dim");
-        zoom.append(&small);
         zoom.append(&inline);
-        let big = gtk::Image::from_icon_name("zoom-in-symbolic");
-        big.add_css_class("dim");
-        zoom.append(&big);
-        bar.append(zoom);
+        foot.append(&group_menu);
+        foot.append(zoom);
 
         self.zoom_menu.set_icon_name("zoom-in-symbolic");
         self.zoom_menu.set_tooltip_text(Some("Thumbnail size"));
@@ -497,11 +526,10 @@ impl App {
         pop_box.append(&gtk::Image::from_icon_name("zoom-in-symbolic"));
         pop.set_child(Some(&pop_box));
         self.zoom_menu.set_popover(Some(&pop));
-        bar.append(&self.zoom_menu);
+        foot.append(&self.zoom_menu);
 
         let a = self.clone();
         self.info_button.connect_clicked(move |_| a.toggle_inspector());
-        bar.append(&self.info_button);
     }
 
     /// A sidebar entry. `count` is `Some` for an entry that shows a number (which may
@@ -536,25 +564,18 @@ impl App {
         g
     }
 
-    fn group_label(&self, list: &gtk::Box, text: &str) {
-        list.append(&self.make_group_label(text));
-    }
 
     fn build_nav(self: &Rc<Self>, list: &gtk::Box) {
         self.compact_items.borrow_mut().clear();
         self.counts.borrow_mut().clear();
         self.nav_items.borrow_mut().clear();
-        let first = self.make_group_label("Library");
-        first.add_css_class("first");
-        list.append(&first);
-        for (id, title, icon) in LIBRARY_SECTIONS {
-            let n = self.state.borrow().count(id);
-            self.nav_item(list, id, icon, title, Some(n));
-        }
-        self.group_label(list, "Media");
-        for (id, title, icon) in MEDIA_SECTIONS {
-            let n = self.state.borrow().count(id);
-            self.nav_item(list, id, icon, title, Some(n));
+        // One list, no heading: the library and its views first, then the media kinds,
+        // then the tools.
+        for id in ["all_photos", "favorites", "recent", "videos", "screenshots", "photos", "folders", "duplicates"] {
+            if let Some((id, title, icon)) = LIBRARY_SECTIONS.iter().chain(MEDIA_SECTIONS).find(|(s, _, _)| *s == id) {
+                let n = self.state.borrow().count(id);
+                self.nav_item(list, id, icon, title, Some(n));
+            }
         }
         // Albums: a heading with an add button, then one item per album.
         let head = hbox(0);
@@ -563,7 +584,6 @@ impl App {
         g.set_hexpand(true);
         head.append(&g);
         let add = gtk::Button::from_icon_name("list-add-symbolic");
-        add.add_css_class("nav-collapse");
         add.add_css_class("nav-add");
         add.set_tooltip_text(Some("New album"));
         add.set_valign(gtk::Align::Center);
@@ -592,6 +612,7 @@ impl App {
         for (id, name) in albums {
             let n = self.state.borrow().count(&id);
             self.nav_item(&self.albums_box, &id, "folder-symbolic", &name, Some(n));
+            self.album_cover(&id);
             // Right-click an album for its menu.
             if let Some(button) = self.nav_items.borrow().get(&id) {
                 let click = gtk::GestureClick::new();
@@ -612,6 +633,34 @@ impl App {
         }
         centre_icons(self.nav.upcast_ref(), compact);
         self.mark_active_nav();
+    }
+
+    /// An album's row shows its first photo, small and rounded, in place of the icon.
+    fn album_cover(self: &Rc<Self>, id: &str) {
+        let first = {
+            let s = self.state.borrow();
+            s.lib.album(id).and_then(|a| {
+                a.photo_ids.iter().find_map(|pid| s.lib.photos.iter().find(|p| &p.id == pid)).map(cell_data)
+            })
+        };
+        let (Some(cell), Some(button)) = (first, self.nav_items.borrow().get(id).cloned()) else { return };
+        let Some(icon) = button.child().and_then(|c| c.first_child()) else { return };
+        let cover = gtk::Picture::new();
+        cover.add_css_class("album-cover");
+        cover.set_content_fit(gtk::ContentFit::Cover);
+        cover.set_size_request(18, 18);
+        cover.set_overflow(gtk::Overflow::Hidden);
+        cover.set_valign(gtk::Align::Center);
+        let weak = cover.downgrade();
+        crate::grid::thumbnail_texture(&cell, move |tex| {
+            if let Some(cover) = weak.upgrade() {
+                cover.set_paintable(Some(&tex));
+            }
+        });
+        if let Some(content) = icon.parent().and_downcast::<gtk::Box>() {
+            content.insert_child_after(&cover, Some(&icon));
+            content.remove(&icon);
+        }
     }
 
     fn wire(self: &Rc<Self>, _nav_scroll: &gtk::ScrolledWindow) {
@@ -918,11 +967,21 @@ impl App {
         let message = self.empty_message(&s);
         let n = s.shown.len();
         chrome::set_title(&self.window, "Photos", &s.section_title());
-        self.status_items.set_text(&format!("{n} {}", if n == 1 { "item" } else { "items" }));
+        self.header.set_subtitle(&s.section_title());
+        let videos = s.shown.iter().filter(|&&i| s.lib.photos[i].is_video()).count();
+        let plural = |n: usize, one: &str, many: &str| format!("{} {}", thousands(n), if n == 1 { one } else { many });
+        self.status_items.set_text(&format!(
+            "{} · {}",
+            plural(n - videos, "photo", "photos"),
+            plural(videos, "video", "videos")
+        ));
         let spans = s.spans.clone();
+        // The scrubber is a timeline; folders and duplicates aren't one.
+        let timeline = !matches!(s.section.as_str(), "folders" | "duplicates");
         let album = s.album_id().map(String::from);
         let library_empty = s.lib.photos.is_empty() && !self.scanning.get() && s.query.trim().is_empty();
         drop(s);
+        self.gallery.set_timeline(timeline);
         self.gallery.set_items(items, spans, scroll_top);
         let action: Option<widgets::ButtonAction> = library_empty.then(|| {
             let a = self.clone();
@@ -1006,10 +1065,16 @@ impl App {
         let s = self.state.borrow();
         self.gallery.set_selection(s.selected_indices(), s.cursor_index(), reveal);
         let n = s.selected.len();
-        self.status_selection.set_text(&if n > 1 { format!("· {n} selected") } else { String::new() });
+        self.status_selection.set_text("");
+        // The pill says how many only for a multiple selection; one photo's actions stay.
         self.deselect.set_visible(n > 1);
         self.selection_chip.set_visible(n > 1);
         self.selection_chip.set_text(&format!("{n} selected"));
+        if n > 1 {
+            self.selection_pill.add_css_class("many");
+        } else {
+            self.selection_pill.remove_css_class("many");
+        }
         let ids = s.target_ids();
         let any = !ids.is_empty();
         let all_fav = any && ids.iter().all(|id| s.lib.is_favorite(id));
@@ -1036,7 +1101,6 @@ impl App {
                     s.lib.albums.iter().filter(|a| a.photo_ids.contains(id)).map(|a| (a.id.clone(), a.name.clone())).collect()
                 })
                 .unwrap_or_default(),
-            cell: s.cursor_photo().map(cell_data),
         };
         drop(s);
         self.inspector.update(&view);
@@ -2119,13 +2183,14 @@ impl App {
 
     /// The info drawer, beside the grid below the bar: the grid makes room for it.
     fn apply_inspector_visibility(&self) {
-        let show = prefs::get().inspector_open;
+        // A half-screen window has no room for it: the grid keeps the width.
+        let show = prefs::get().inspector_open && !self.narrow.get();
+        self.info_button.set_visible(!self.narrow.get());
         self.inspector.root.set_visible(show);
-        self.gallery.widget().set_margin_end(if show { inspector::WIDTH } else { 0 });
         if show {
-            self.info_button.add_css_class("active");
+            self.info_button.add_css_class("on");
         } else {
-            self.info_button.remove_css_class("active");
+            self.info_button.remove_css_class("on");
         }
     }
 
@@ -2190,9 +2255,6 @@ impl App {
         } else {
             "Collapse the sidebar (Ctrl+B)"
         }));
-        if let Some(head) = self.nav.first_child().and_downcast::<gtk::Box>() {
-            chrome::set_head_compact(&head, compact);
-        }
         centre_icons(self.nav.upcast_ref(), compact);
     }
 
@@ -2297,6 +2359,19 @@ fn cell_data(p: &crate::models::PhotoItem) -> CellData {
         video: p.is_video(),
         aspect: p.aspect(),
     }
+}
+
+/// 4812 → "4,812".
+fn thousands(n: usize) -> String {
+    let digits = n.to_string();
+    let mut out = String::new();
+    for (i, c) in digits.chars().enumerate() {
+        if i > 0 && (digits.len() - i).is_multiple_of(3) {
+            out.push(',');
+        }
+        out.push(c);
+    }
+    out
 }
 
 fn centre_icons(w: &gtk::Widget, compact: bool) {

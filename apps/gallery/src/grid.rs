@@ -24,10 +24,10 @@ const CACHE_LIMIT: usize = 1200;
 const HEADER_HEIGHT: i32 = 46;
 /// How long the pointer rests on a video before it starts playing.
 const PREVIEW_DELAY: Duration = Duration::from_millis(600);
-/// The scrubber's width: inside the grid's side padding, and wider (with year labels)
-/// while the pointer is on it.
+/// The scrubber's width: a labelled column beside the grid, or a slim strip inside the
+/// padding of a narrow window.
 const SCRUB_NARROW: i32 = 18;
-const SCRUB_WIDE: i32 = 72;
+const SCRUB_WIDE: i32 = 56;
 
 /// What a thumbnail needs to draw itself.
 #[derive(Clone)]
@@ -212,7 +212,7 @@ impl Gallery {
         scrubber.add_css_class("scrubber");
         scrubber.set_halign(gtk::Align::End);
         scrubber.set_valign(gtk::Align::Fill);
-        scrubber.set_content_width(SCRUB_NARROW);
+        scrubber.set_content_width(SCRUB_WIDE);
         scrubber.set_cursor_from_name(Some("pointer"));
         scrubber.set_tooltip_text(Some("Drag to jump through time"));
         let bubble = crate::widgets::label("", "scrub-bubble");
@@ -382,7 +382,7 @@ impl Gallery {
 
     fn bind(&self, row: &Rc<RowWidget>, data: &Row) {
         row.root.set_margin_start(self.0.pad.get());
-        row.root.set_margin_end(self.0.pad.get());
+        row.root.set_margin_end(self.0.pad.get() + self.scrub_room());
         match data {
             Row::Header { title, sub } => {
                 row.header.set_visible(true);
@@ -586,7 +586,16 @@ impl Gallery {
     /// Use the narrow-window padding (or the normal one).
     pub fn set_narrow(&self, narrow: bool) {
         let pad = if narrow { PAD_NARROW } else { PAD_WIDE };
+        self.0.scrubber.set_content_width(if narrow { SCRUB_NARROW } else { SCRUB_WIDE });
         if self.0.pad.replace(pad) != pad {
+            self.queue_relayout();
+        }
+    }
+
+    /// Show the date scrubber, or not, for views that aren't in date order.
+    pub fn set_timeline(&self, on: bool) {
+        if self.0.scrubber.is_visible() != on {
+            self.0.scrubber.set_visible(on);
             self.queue_relayout();
         }
     }
@@ -710,7 +719,7 @@ impl Gallery {
     fn relayout(&self, scroll_top: bool) {
         let width = self.0.scroller.hadjustment().page_size() as i32;
         let width = if width > 0 { width } else { self.0.scroller.width().max(800) };
-        let avail = (width - 2 * self.0.pad.get()).max(80);
+        let avail = (width - 2 * self.0.pad.get() - self.scrub_room()).max(80);
         let target = 110.0 + self.0.zoom.get() * 150.0;
 
         let items = self.0.items.borrow();
@@ -788,9 +797,6 @@ impl Gallery {
         drag.connect_drag_end(move |_, _, _| {
             if let Some(inner) = weak.upgrade() {
                 inner.scrubbing.set(false);
-                if !inner.scrubber.has_css_class("hover") {
-                    inner.scrubber.set_content_width(SCRUB_NARROW);
-                }
                 Gallery(inner).hide_bubble_soon();
             }
         });
@@ -801,7 +807,6 @@ impl Gallery {
         motion.connect_enter(move |_, _, _| {
             if let Some(inner) = weak.upgrade() {
                 inner.scrubber.add_css_class("hover");
-                inner.scrubber.set_content_width(SCRUB_WIDE);
             }
         });
         let weak = Rc::downgrade(&self.0);
@@ -817,7 +822,6 @@ impl Gallery {
             if let Some(inner) = weak.upgrade() {
                 inner.scrubber.remove_css_class("hover");
                 if !inner.scrubbing.get() {
-                    inner.scrubber.set_content_width(SCRUB_NARROW);
                     Gallery(inner).hide_bubble_soon();
                 }
             }
@@ -893,6 +897,13 @@ impl Gallery {
     }
 
     /// Year marks down the right edge, and a bar for the part on screen.
+    /// Room the grid leaves on its right for the scrubber's column.
+    fn scrub_room(&self) -> i32 {
+        if self.0.pad.get() == PAD_NARROW || !self.0.scrubber.is_visible() { 0 } else { SCRUB_WIDE - 8 }
+    }
+
+    /// The scrubber: the latest year with its months, then each earlier year, with a
+    /// tick between labels and an accent bar beside the part of the timeline on screen.
     fn draw_scrubber(&self, area: &gtk::DrawingArea, cr: &gtk::cairo::Context, w: i32, h: i32) {
         let tops = self.0.row_tops.borrow();
         let labels = self.0.row_labels.borrow();
@@ -902,41 +913,77 @@ impl Gallery {
             return;
         }
         let fg = area.color();
+        let accent = gdk::RGBA::parse(nyx_theme::app_accent("photos").as_str()).unwrap_or(fg);
+        let set = |cr: &gtk::cairo::Context, c: &gdk::RGBA, a: f64| {
+            cr.set_source_rgba(c.red() as f64, c.green() as f64, c.blue() as f64, a);
+        };
         let (w, h) = (w as f64, h as f64);
-        let x = w - 9.0;
         let wide = w > SCRUB_NARROW as f64 + 1.0;
-        // The visible page.
-        let top = adj.value() / adj.upper() * h;
-        let len = (adj.page_size() / adj.upper() * h).max(16.0);
-        cr.set_source_rgba(fg.red() as f64, fg.green() as f64, fg.blue() as f64, 0.35);
-        rounded(cr, x - 1.5, top, 3.0, len);
+        let pad = 8.0;
+        let span = (h - 2.0 * pad).max(1.0);
+        // The part on screen: an accent bar on the right edge.
+        let top = pad + adj.value() / adj.upper() * span;
+        let len = (adj.page_size() / adj.upper() * span).max(16.0);
+        set(cr, &accent, 0.9);
+        rounded(cr, w - 3.0, top, 2.0, len);
         let _ = cr.fill();
+        if !wide {
+            return;
+        }
 
-        // A mark where each year starts; a label where there is room for one.
+        // The labels: months while in the first (latest) year, then years.
         let layout = pangocairo::functions::create_layout(cr);
         let mut font = area.pango_context().font_description().unwrap_or_default();
-        font.set_size((font.size() as f64 * 0.78) as i32);
+        font.set_size((font.size() as f64 * 0.8) as i32);
         layout.set_font_description(Some(&font));
-        let mut last_year = String::new();
-        let mut last_label_y = f64::NEG_INFINITY;
+        let first_year = labels.first().and_then(|l| l.rsplit(' ').next()).unwrap_or("").to_string();
+        let mut last_key = String::new();
+        let mut last_y = f64::NEG_INFINITY;
+        let cx = (w - 6.0) / 2.0;
+        let page = (top, top + len);
         for (r, label) in labels.iter().enumerate() {
-            let year = label.rsplit(' ').next().unwrap_or("").to_string();
-            if year == last_year || year.is_empty() {
+            let year = label.rsplit(' ').next().unwrap_or("");
+            if year.is_empty() {
                 continue;
             }
-            last_year = year.clone();
-            let y = tops[r] as f64 / total as f64 * h;
-            cr.set_source_rgba(fg.red() as f64, fg.green() as f64, fg.blue() as f64, 0.45);
-            cr.rectangle(x - 4.0, y, 8.0, 1.0);
-            let _ = cr.fill();
-            if wide && y - last_label_y >= 18.0 && y < h - 8.0 {
-                layout.set_text(&year);
-                let (tw, th) = layout.pixel_size();
-                cr.set_source_rgba(fg.red() as f64, fg.green() as f64, fg.blue() as f64, 0.62);
-                cr.move_to(x - 8.0 - tw as f64, (y - th as f64 / 2.0).max(0.0));
-                pangocairo::functions::show_layout(cr, &layout);
-                last_label_y = y;
+            let month = label.split(' ').next().unwrap_or("");
+            let (key, text, is_year) = if year == first_year {
+                if last_key.is_empty() {
+                    (format!("y{year}"), year.to_string(), true)
+                } else {
+                    (format!("m{label}"), month.to_string(), false)
+                }
+            } else {
+                (format!("y{year}"), year.to_string(), true)
+            };
+            if key == last_key {
+                continue;
             }
+            last_key = key;
+            let y = pad + tops[r] as f64 / total as f64 * span;
+            if y - last_y < 22.0 || y > h - pad {
+                continue;
+            }
+            // A tick halfway to the previous label.
+            if last_y.is_finite() {
+                set(cr, &fg, 0.18);
+                cr.rectangle(cx - 4.0, (last_y + y) / 2.0 + 4.0, 8.0, 1.0);
+                let _ = cr.fill();
+            }
+            layout.set_text(&text);
+            let mut f = font.clone();
+            f.set_weight(if is_year { gtk::pango::Weight::Semibold } else { gtk::pango::Weight::Normal });
+            layout.set_font_description(Some(&f));
+            let (tw, th) = layout.pixel_size();
+            let here = y >= page.0 - 1.0 && y <= page.1;
+            if here {
+                set(cr, &accent, 1.0);
+            } else {
+                set(cr, &fg, if is_year { 0.8 } else { 0.55 });
+            }
+            cr.move_to(cx - tw as f64 / 2.0, y);
+            pangocairo::functions::show_layout(cr, &layout);
+            last_y = y + th as f64 / 2.0;
         }
     }
 }
@@ -1006,6 +1053,8 @@ impl RowWidget {
         let title = crate::widgets::label("", "group-title gallery-title");
         let sub = crate::widgets::label("", "dim gallery-sub");
         sub.set_valign(gtk::Align::Baseline);
+        // A folder's parent path can be long: it gives way first.
+        sub.set_ellipsize(gtk::pango::EllipsizeMode::Start);
         title.set_valign(gtk::Align::Baseline);
         title.set_ellipsize(gtk::pango::EllipsizeMode::Middle);
         header.append(&title);

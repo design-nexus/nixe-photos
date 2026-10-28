@@ -111,6 +111,8 @@ pub fn group(title: &str, note: &str) -> Group {
     }
     let list = vbox(0);
     list.add_css_class("settings-card");
+    // 2.0: the group is one card and its rows sit plainly inside it.
+    list.add_css_class("group-list");
     // Keeps a highlighted first or last row inside the rounded corners.
     list.set_overflow(gtk::Overflow::Hidden);
     wrapper.append(&list);
