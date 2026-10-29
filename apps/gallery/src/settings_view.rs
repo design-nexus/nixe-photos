@@ -159,6 +159,7 @@ fn fill_folders(list: &gtk::Box, changed: Rc<dyn Fn()>) {
 fn viewing_group(on_layout: Rc<dyn Fn()>) -> widgets::Group {
     let group = widgets::group("Gallery and viewer", "");
     let p = prefs::get();
+    let changed = on_layout.clone();
     let (layout, _) = widgets::choice_row(
         "Thumbnail layout",
         "Justified keeps each photo's shape in rows of equal height; squares line up in a grid. Also under the grid button at the bottom right.",
@@ -170,6 +171,15 @@ fn viewing_group(on_layout: Rc<dyn Fn()>) -> widgets::Group {
         },
     );
     group.add(&layout);
+    let on_group = changed.clone();
+    let (row, _) = widgets::choice_row("Group by", "How dates are grouped in the gallery.",
+        vec![("days".into(), "Days".into()), ("months".into(), "Months".into()), ("years".into(), "Years".into()), ("all".into(), "No grouping".into())],
+        &p.view_mode, move |id| { prefs::update(|p| p.view_mode = id); on_group(); });
+    group.add(&row);
+    let (row, _) = widgets::choice_row("Recent covers", "Photos added within this many days.",
+        vec![("7".into(), "7 days".into()), ("30".into(), "30 days".into()), ("90".into(), "90 days".into())],
+        &p.recent_days.to_string(), move |id| { prefs::update(|p| p.recent_days = id.parse().unwrap_or(30)); changed(); });
+    group.add(&row);
     let (slides, _) = widgets::choice_row(
         "Slideshow speed",
         "How long each photo shows for. Press S in the viewer.",

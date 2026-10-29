@@ -922,7 +922,12 @@ impl App {
             size,
             on_rescan: Rc::new(move || a.rescan(false)),
             on_folders: Rc::new(move || b.use_library_folders()),
-            on_layout: Rc::new(move || c.gallery.set_justified(prefs::get().layout == "justified")),
+            on_layout: Rc::new(move || {
+                let p = prefs::get();
+                c.gallery.set_justified(p.layout == "justified");
+                c.state.borrow_mut().view_mode = p.view_mode;
+                c.refresh(true);
+            }),
         });
         if self.narrow.get() {
             body.add_css_class("narrow");

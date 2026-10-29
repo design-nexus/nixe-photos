@@ -21,8 +21,6 @@ pub const MEDIA_SECTIONS: &[(&str, &str, &str)] = &[
     ("videos", "Videos", "video-x-generic-symbolic"),
 ];
 
-/// How far back "Recently added" looks.
-const RECENT_DAYS: i64 = 30;
 const DAY: i64 = 86400;
 
 #[derive(Default)]
@@ -105,7 +103,7 @@ impl State {
 
     fn recent_since(&self) -> u64 {
         let unix_now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
-        unix_now.saturating_sub((RECENT_DAYS * DAY) as u64)
+        unix_now.saturating_sub((crate::prefs::get().recent_days.clamp(1, 365) as i64 * DAY) as u64)
     }
 
     /// The number shown beside a section in the sidebar (`None`: no number).

@@ -37,6 +37,7 @@ pub struct Prefs {
     /// Moved to the 2.0 defaults once (justified thumbnails); after that the choice is
     /// the user's.
     pub design_2: bool,
+    pub recent_days: u32,
 }
 
 impl Default for Prefs {
@@ -59,6 +60,7 @@ impl Default for Prefs {
             layout: "justified".into(),
             slideshow_seconds: 4,
             design_2: true,
+            recent_days: 30,
         }
     }
 }
