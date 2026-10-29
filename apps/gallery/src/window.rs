@@ -223,10 +223,11 @@ impl App {
         nav.set_hexpand(false);
         // The sidebar's toggle and search live in the header.
         let collapse_button = nyx_ui::widgets::bar_button("sidebar-show-symbolic", "Collapse the sidebar (Ctrl+B)");
-        let find = nyx_ui::widgets::bar_button("system-search-symbolic", "Search photos (Ctrl+F)");
         let search = gtk::SearchEntry::new();
-        search.set_placeholder_text(Some("Search photos"));
-        search.set_visible(false);
+        search.set_placeholder_text(Some("Search photos  (Ctrl+F)"));
+        search.add_css_class("bar-search");
+        search.set_width_chars(22);
+        search.set_valign(gtk::Align::Center);
 
         let list = vbox(0);
         let albums_box = vbox(0);
@@ -284,7 +285,6 @@ impl App {
         pages.add_named(&gallery_scroll, Some("gallery"));
 
         let column = vbox(0);
-        column.append(&chrome::search_strip(&search));
         column.append(&pages);
         let content = gtk::Overlay::new();
         content.set_child(Some(&column));
@@ -306,7 +306,7 @@ impl App {
         header.center.append(&selection_pill);
         header.end.set_spacing(4);
         header.end.append(&header_actions);
-        header.end.append(&find);
+        header.end.append(&search);
         let info_button = nyx_ui::widgets::bar_button("dialog-information-symbolic", "Photo info (I)");
         header.end.append(&info_button);
         let more_menu = gtk::MenuButton::new();
@@ -377,14 +377,6 @@ impl App {
         app.build_toolbar(&status);
         app.build_nav(&list);
         app.wire(&nav_scroll);
-        let a = app.clone();
-        find.connect_clicked(move |_| {
-            if a.search.is_visible() && a.search.text().is_empty() {
-                a.search.set_visible(false);
-            } else {
-                a.focus_search();
-            }
-        });
         let a = app.clone();
         gear.connect_clicked(move |_| a.show_settings());
         app
@@ -876,7 +868,7 @@ impl App {
         } else if !self.search.text().is_empty() {
             self.search.set_text("");
             self.leave_search();
-        } else if self.typing() || self.search.is_visible() {
+        } else if self.typing() {
             self.leave_search();
         } else {
             self.state.borrow_mut().clear_selection();
@@ -2200,16 +2192,12 @@ impl App {
     }
 
     fn focus_search(self: &Rc<Self>) {
-        self.search.set_visible(true);
         self.search.grab_focus();
     }
 
-    /// Hand the keyboard back to the gallery; an empty search field goes away.
+    /// Hand the keyboard back to the gallery.
     fn leave_search(&self) {
         GtkWindowExt::set_focus(&self.window, None::<&gtk::Widget>);
-        if self.search.text().is_empty() {
-            self.search.set_visible(false);
-        }
     }
 
     fn apply_width(self: &Rc<Self>) {

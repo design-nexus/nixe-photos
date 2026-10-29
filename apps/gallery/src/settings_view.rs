@@ -1,7 +1,7 @@
 //! The settings page: the app's own window settings, the library, and the keys.
 
 use crate::widgets::{self, hbox, vbox};
-use crate::{clamp, cmd, paths, prefs, theme};
+use crate::{clamp, cmd, paths, prefs};
 use gtk::prelude::*;
 use std::rc::Rc;
 
@@ -75,12 +75,10 @@ pub fn build(info: Info) -> (gtk::ScrolledWindow, gtk::Box) {
     body.set_hexpand(true);
 
     let on_layout = info.on_layout.clone();
-    body.append(&window_group().wrapper);
     body.append(&library_group(info).wrapper);
     body.append(&viewing_group(on_layout).wrapper);
     body.append(&opening_group().wrapper);
     body.append(&editing_group().wrapper);
-    body.append(&shortcuts_group().wrapper);
 
     let scroller = gtk::ScrolledWindow::builder()
         .hscrollbar_policy(gtk::PolicyType::Never)
@@ -89,91 +87,6 @@ pub fn build(info: Info) -> (gtk::ScrolledWindow, gtk::Box) {
         .child(&clamp::Clamp::new(&body, MAX_CONTENT_WIDTH))
         .build();
     (scroller, body)
-}
-
-fn window_group() -> widgets::Group {
-    let group = widgets::group("Photos window", "");
-    group.add(&nyx_ui::widgets::start_row());
-    let p = prefs::get();
-    let omarchy = theme::omarchy_available();
-    let following = omarchy && p.mode == prefs::ThemeMode::Omarchy;
-
-    let themes = theme::all();
-    let options: Vec<(String, String)> = themes.iter().map(|t| (t.id.clone(), t.name.clone())).collect();
-    let swatches = hbox(8);
-    swatches.set_halign(gtk::Align::End);
-    refresh_swatches(&swatches);
-
-    let (theme_row, dropdown) =
-        widgets::choice_row("Theme", "Colors for the window, when it isn't following Omarchy.", options, &p.theme, {
-            let swatches = swatches.clone();
-            move |id| {
-                prefs::update(|p| {
-                    p.mode = prefs::ThemeMode::Theme;
-                    p.theme = id.clone();
-                });
-                theme::apply();
-                refresh_swatches(&swatches);
-            }
-        });
-    dropdown.set_sensitive(!following);
-
-    if omarchy {
-        let (row, switch) = widgets::switch_row(
-            "Follow Omarchy theme",
-            "Match the colors of the current Omarchy theme as it changes.",
-            following,
-            {
-                let (dropdown, swatches) = (dropdown.clone(), swatches.clone());
-                move |on| {
-                    prefs::update(|p| p.mode = if on { prefs::ThemeMode::Omarchy } else { prefs::ThemeMode::Theme });
-                    theme::apply();
-                    dropdown.set_sensitive(!on);
-                    refresh_swatches(&swatches);
-                }
-            },
-        );
-        group.add(&row);
-        // Picking a theme by hand stops following.
-        dropdown.connect_selected_notify(move |_| {
-            if switch.is_active() {
-                switch.set_active(false);
-            }
-        });
-    }
-    group.add(&theme_row);
-    group.add(&widgets::row("Current colors", "", Some(swatches.upcast_ref())));
-
-    group.add(&nyx_ui::widgets::accent_row("photos"));
-    let (motion, _) = widgets::switch_row("Reduce motion", "Skip fades and slides.", p.reduce_motion, |on| {
-        prefs::update(|p| p.reduce_motion = on);
-        theme::apply();
-        crate::window::apply_motion();
-    });
-    group.add(&motion);
-    group
-}
-
-/// Squares for the window's background, surface, muted, text, accent and danger colours.
-fn refresh_swatches(row: &gtk::Box) {
-    while let Some(c) = row.first_child() {
-        row.remove(&c);
-    }
-    let p = theme::current_palette();
-    for (colour, name) in [
-        (&p.bg, "Background"),
-        (&p.surface, "Surface"),
-        (&p.muted, "Muted"),
-        (&p.text, "Text"),
-        (&p.accent, "Accent"),
-        (&p.danger, "Danger"),
-    ] {
-        let s = gtk::Box::new(gtk::Orientation::Horizontal, 0);
-        s.add_css_class("swatch");
-        s.set_tooltip_text(Some(&format!("{name} {colour}")));
-        widgets::paint(&s, colour);
-        row.append(&s);
-    }
 }
 
 fn library_group(info: Info) -> widgets::Group {
@@ -332,12 +245,3 @@ fn editing_group() -> widgets::Group {
     group
 }
 
-fn shortcuts_group() -> widgets::Group {
-    let group = widgets::group("Keyboard shortcuts", "Press F1 anywhere in the gallery to see these.");
-    for (_, keys) in SHORTCUTS {
-        for (title, combo) in *keys {
-            group.add(&widgets::row(title, "", Some(keys_widget(combo).upcast_ref())));
-        }
-    }
-    group
-}
